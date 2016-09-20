@@ -2,13 +2,11 @@
 
 namespace Drupal\apsis_mail\Plugin\Block;
 
-use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -22,19 +20,14 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPluginInterface {
 
+  protected $configFactory;
+
   /**
    * Constructor.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, ConfigFactoryInterface $config_factory) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->configFactory = $config_factory;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function blockAccess(AccountInterface $account) {
-    return AccessResult::allowedIfHasPermission($account, 'access content');
   }
 
   /**
