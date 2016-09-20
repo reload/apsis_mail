@@ -1,0 +1,5 @@
+api_key: ''
+api_url: 'se.api.anpdm.com'
+api_port: '8443'
+user_roles: null
+mailing_lists: null

@@ -1,0 +1,118 @@
+<?php
+
+/**
+ * @file
+ * Apsis mail module file.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function apsis_mail_theme() {
+  return [
+    'apsis_mail_block' => [
+      'render_element' => 'element',
+      'template' => 'apsis_mail-block',
+      'variables' => [
+        'body' => NULL,
+        'form' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state) {
+  // Get apsis data.
+  $apsis = \Drupal::service('apsis');
+  $config = $apsis->config;
+  $mailing_lists = $apsis->getAllowedMailingLists();
+
+  // Get user info.
+  $user = $form_state->getFormObject()->getEntity();
+  $email = $user->getEmail();
+  $roles = $user->getRoles();
+
+  // Get role settings and trim values.
+  $apsis_roles = $config->get('user_roles') ?: [];
+  $allowed_roles = array_keys(array_filter($apsis_roles));
+
+  // Proceed if roles are matching and there is allowed mailing lists.
+  if (!empty(array_intersect($roles, $allowed_roles)) && !empty($mailing_lists)) {
+    $subscriber_id = $apsis->getSubscriberIdByEmail($email);
+
+    // Get subscribed lists directly from apsis to use as default value.
+    $lists_subscribed = [];
+    if ($subscriber_id) {
+      $lists = $apsis->getSubscriberMailingLists($subscriber_id);
+      foreach ($lists->Mailinglists as $list) {
+        $lists_subscribed[] = $list->Id;
+      }
+    }
+
+    // Add mailing lists element to form.
+    $form['apsis_newsletter_signup'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Newsletters'),
+      '#description' => ('Subscribe to newsletter.'),
+      '#default_value' => $lists_subscribed,
+      '#options' => $mailing_lists,
+      // Since this is a faux field, we put it last.
+      '#weight' => 50,
+    ];
+
+    // Add submit handler.
+    $form['actions']['submit']['#submit'][] = '_apsis_mail_submit';
+  }
+}
+
+/**
+ * Submit handler.
+ */
+function _apsis_mail_submit($form, FormStateInterface $form_state) {
+  // Get Apsis service.
+  $apsis = \Drupal::service('apsis');
+
+  // Get user info.
+  $user = $form_state->getFormObject()->getEntity();
+  $email = $user->getEmail();
+  $name = $user->getUsername();
+
+  // Lists to add subscription to.
+  $lists_send = array_keys(array_filter($form_state->getValue('apsis_newsletter_signup')));
+
+  $subscriber_id = $apsis->getSubscriberIdByEmail($email);
+
+  // Get subscribed lists directly from apsis to use as default value.
+  $lists_subscribed = [];
+  if ($subscriber_id) {
+    $lists = $apsis->getSubscriberMailingLists($subscriber_id);
+    foreach ($lists->Mailinglists as $list) {
+      $lists_subscribed[] = $list->Id;
+    }
+  }
+
+  // Match lists with allowed ones.
+  $allowed_lists = array_keys($apsis->getAllowedMailingLists());
+  $lists_subscribed_allowed = array_intersect($allowed_lists, $lists_subscribed);
+
+  // Lists to add subscription.
+  $lists_add = array_diff($lists_send, $lists_subscribed_allowed);
+
+  // Lists to remove subscription.
+  $lists_subtract = array_diff($lists_subscribed_allowed, $lists_send);
+
+  // Subscribe to newsletters.
+  foreach ($lists_add as $list_id) {
+    $apsis->addSubscriber($list_id, $email, $name);;
+  }
+
+  // Unsubscribe to newsletters.
+  foreach ($lists_subtract as $list_id) {
+    $apsis->deleteSubscriber($list_id, $email);
+  }
+}

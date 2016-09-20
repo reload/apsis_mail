@@ -1,0 +1,3 @@
+administer apsis mail:
+  title: 'Administer apsis mail settings'
+  restrict access: FALSE
