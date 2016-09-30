@@ -30,8 +30,10 @@ class ApsisMailSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // Get config.
+    // Get config and states.
     $config = $this->config('apsis_mail.admin');
+    $api_key = \Drupal::state()->get('apsis_mail_api_key');
+    $mailing_lists = \Drupal::state()->get('apsis_mail_mailing_lists');
 
     // Invoke Apsis service.
     $apsis = \Drupal::service('apsis');
@@ -40,7 +42,7 @@ class ApsisMailSettings extends ConfigFormBase {
       '#type' => 'textfield',
       '#title' => t('API key'),
       '#description' => t('API key goes here.'),
-      '#default_value' => $config->get('api_key'),
+      '#default_value' => $api_key,
     ];
 
     $form['api_url'] = [
@@ -95,7 +97,7 @@ class ApsisMailSettings extends ConfigFormBase {
         '#title' => $this->t('Mailing lists'),
         '#description' => t('Globally allowed mailing lists on site'),
         '#options' => $apsis->getMailingLists(),
-        '#default_value' => $config->get('mailing_lists') ? $config->get('mailing_lists') : [],
+        '#default_value' => $mailing_lists ? $mailing_lists : [],
       ];
     }
 
@@ -106,14 +108,18 @@ class ApsisMailSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
+    // Save states.
+    \Drupal::state()->setMultiple([
+      'apsis_mail_api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
+      'apsis_mail_mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
+    ]);
+
     // Save settings.
     $this->config('apsis_mail.admin')
-      ->set('api_key', $form_state->getValue('api_key'))
       ->set('api_url', $form_state->getValue('api_url'))
       ->set('api_ssl', $form_state->getValue('api_ssl'))
       ->set('api_port', $form_state->getValue('api_port'))
       ->set('user_roles', $form_state->getValue('user_roles'))
-      ->set('mailing_lists', $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : '')
       ->save();
 
     drupal_set_message($this->t('Settings saved.'));

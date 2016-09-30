@@ -81,7 +81,6 @@ class SubscribeForm extends FormBase {
         '#required' => TRUE,
       ];
     }
-
     return $form;
   }
 
