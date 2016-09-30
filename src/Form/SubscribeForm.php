@@ -67,10 +67,11 @@ class SubscribeForm extends FormBase {
       ],
     ];
 
-    // If exposed option is selected for lists,
-    // we pass the options on to the block form.
+    // If exposed option is selected for lists, we pass the options on to the
+    // block form or if there is no specific args, then we default to use the
+    // exposed option.
     $build_info = $form_state->getBuildInfo();
-    if ($build_info['args'][0] == 'exposed') {
+    if (empty($build_info['args']) || $build_info['args'][0] === 'exposed') {
       $form['exposed_lists'] = [
         '#type' => 'checkboxes',
         '#title' => t('Mailing lists'),
