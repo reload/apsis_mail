@@ -83,7 +83,9 @@ class Apsis {
     $allowed_lists = \Drupal::state()->get('apsis_mail_mailing_lists');
 
     // Return list with allowed list items.
-    return array_intersect_key($mailing_lists, array_flip($allowed_lists));;
+    if (!empty($allowed_lists)) {
+      return array_intersect_key($mailing_lists, array_flip($allowed_lists));;
+    }
   }
 
   /**
