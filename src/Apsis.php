@@ -71,6 +71,51 @@ class Apsis {
   }
 
   /**
+   * Perform a cachable request against Apsis.
+   *
+   * If a cached response for the request already exists then that is used.
+   * If not then the an actual request will be performed and the response
+   * cached.
+   *
+   * @param string $method
+   *   The HTTP method to use.
+   * @param string $path
+   *   The endpoint path to use for the request.
+   * @param array $args
+   *   The HTTP request arguments.
+   *
+   * @return mixed
+   *   The response from Apsis.
+   */
+  protected function cachableRequest($method, $path, $args = []) {
+    $cid = 'apsis_mail:api:' . hash('sha256', var_export(func_get_args(), TRUE));
+
+    // First check static cache, to avoid unnecessary queries to cache backend.
+    $response = drupal_static($cid, NULL);
+    if ($response === NULL) {
+      // Then check the cache backend.
+      $cache = \Drupal::cache()->get($cid);
+      if ($cache !== FALSE) {
+        $response = $cache->data;
+      }
+    }
+
+    // If we do not have a cached response then perform the actual request.
+    if ($response === NULL) {
+      $response = $this->request($method, $path, $args);
+
+      // Make sure that static cache is set.
+      $static_cache = &drupal_static($cid, NULL);
+      $static_cache = $response;
+
+      // Cache results for 30 seconds.
+      \Drupal::cache()->set($cid, $response, REQUEST_TIME + 30);
+    }
+
+    return $response;
+  }
+
+  /**
    * Get single mailing list.
    *
    * @return array $list.
@@ -105,7 +150,7 @@ class Apsis {
     ];
 
     // Get request content.
-    $contents = $this->request($method, $path, $args);
+    $contents = $this->cachableRequest($method, $path, $args);
     // Populate array for settings.
     $list = [];
     if (!empty($contents)) {
@@ -131,7 +176,7 @@ class Apsis {
     ];
 
     // Get request content.
-    $contents = $this->request($method, $path, $args);
+    $contents = $this->cachableRequest($method, $path, $args);
 
     // Get result.
     $result = $contents->Result;
@@ -156,7 +201,7 @@ class Apsis {
     ];
 
     // @todo This REST method uses queueing, must figure out how to handle it.
-    $contents = $this->request($method, $path, $args);
+    $contents = $this->cachableRequest($method, $path, $args);
 
     return $contents;
   }
@@ -189,7 +234,7 @@ class Apsis {
     ];
 
     // Do request.
-    $contents = $this->request($method, $path, $args);
+    $contents = $this->cachableRequest($method, $path, $args);
 
     return $contents ? $contents->Result : NULL;
   }
