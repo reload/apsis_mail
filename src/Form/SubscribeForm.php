@@ -120,7 +120,7 @@ class SubscribeForm extends FormBase {
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
       $submit = $apsis->addSubscriber($list, $email, $name);
-      drupal_set_message($submit->Message);
+      drupal_set_message(t($submit->Message));
     }
   }
 
