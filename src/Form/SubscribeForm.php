@@ -70,13 +70,20 @@ class SubscribeForm extends FormBase {
     // If exposed option is selected for lists, we pass the options on to the
     // block form or if there is no specific args, then we default to use the
     // exposed option.
+    // If there is only one mailinglist selected, and no explict exposed setting
+    // set, we'll not expose controls to the user.
     $build_info = $form_state->getBuildInfo();
-    if (empty($build_info['args']) || $build_info['args'][0] === 'exposed') {
+    $allowedMailingLists = $apsis->getAllowedMailingLists();
+
+    if (
+      (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
+      (!empty($build_info['args'][0]) && $build_info['args'][0] === 'exposed')
+    ) {
       $form['exposed_lists'] = [
         '#type' => 'checkboxes',
         '#title' => t('Mailing lists'),
         '#description' => t('Mailing lists to subscribe to.'),
-        '#options' => $apsis->getAllowedMailingLists(),
+        '#options' => $allowedMailingLists,
         '#default_value' => [],
         '#required' => TRUE,
       ];
