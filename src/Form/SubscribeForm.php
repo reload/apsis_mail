@@ -70,8 +70,6 @@ class SubscribeForm extends FormBase {
     // If exposed option is selected for lists, we pass the options on to the
     // block form or if there is no specific args, then we default to use the
     // exposed option.
-    // If there is only one mailinglist selected, and no explict exposed setting
-    // set, we'll not expose controls to the user.
     $build_info = $form_state->getBuildInfo();
     $allowedMailingLists = $apsis->getAllowedMailingLists();
 
@@ -88,6 +86,14 @@ class SubscribeForm extends FormBase {
         '#required' => TRUE,
       ];
     }
+
+    // If there is only one mailinglist selected, and no explict exposed setting
+    // set, we'll not expose controls to the user.
+    if (empty($build_info['args'][0]) && count($allowedMailingLists) == 1) {
+      $build_info['args'][0] = key($allowedMailingLists);
+      $form_state->setBuildInfo($build_info);
+    }
+
     return $form;
   }
 
@@ -130,5 +136,4 @@ class SubscribeForm extends FormBase {
       drupal_set_message(t($submit->Message));
     }
   }
-
 }
