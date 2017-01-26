@@ -108,7 +108,7 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
 
   // Subscribe to newsletters.
   foreach ($lists_add as $list_id) {
-    $apsis->addSubscriber($list_id, $email, $name);;
+    $apsis->addSubscriber($list_id, $email, $name);
   }
 
   // Unsubscribe to newsletters.
