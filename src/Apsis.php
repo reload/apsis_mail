@@ -314,6 +314,9 @@ class Apsis {
 
   /**
    * Returns demographic data fields.
+   *
+   * @return array
+   *   The demographics from the APSIS account.
    */
   public function getDemographicData() {
     // Request options.
