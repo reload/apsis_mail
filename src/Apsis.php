@@ -312,4 +312,28 @@ class Apsis {
     return $contents;
   }
 
+  /**
+   * Returns demographic data fields.
+   */
+  public function getDemographicData() {
+    // Request options.
+    $method = 'get';
+    $path = '/accounts/v2/demographics';
+    $args = [
+      'headers' => [
+        'Content-length' => 0,
+      ],
+    ];
+    // Get request content.
+    $contents = $this->cachableRequest($method, $path, $args);
+    // Populate array for settings.
+    $demographics = [];
+    if (!empty($contents)) {
+      foreach ($contents->Result->Demographics as $result) {
+        $demographics[$result->Index] = $result->Key;
+      }
+    }
+    return $demographics;
+  }
+
 }
