@@ -313,6 +313,38 @@ class Apsis {
   }
 
   /**
+   * Get a list of allowed demographic data.
+   *
+   * @return array
+   *   Allowed demographic data.
+   */
+  public function getAllowedDemographicData() {
+    // Get all lists.
+    $demographics = $this->getDemographicData();
+
+    // Get config.
+    $config = \Drupal::config('apsis_mail.admin');
+
+    // Get allowed list settings.
+    foreach ($demographics as $demographic) {
+      $key = $demographic['key'];
+
+      if ($config->get($key . '_available')) {
+        $allowed_demographic_data[] = [
+          'key' => $demographic['key'],
+          'index' => $demographic['index'],
+          'alternatives' => $demographic['alternatives'],
+          'required' => $config->get($key . '_required'),
+          'bool' => $config->get($key . '_bool'),
+          'true' => $config->get($key . '_true'),
+        ];
+      }
+    }
+
+    return $allowed_demographic_data;
+  }
+
+  /**
    * Returns demographic data fields.
    *
    * @return array
@@ -329,11 +361,15 @@ class Apsis {
     ];
     // Get request content.
     $contents = $this->cachableRequest($method, $path, $args);
-    // Populate array for settings.
+    // Populate array for demographics.
     $demographics = [];
     if (!empty($contents)) {
       foreach ($contents->Result->Demographics as $result) {
-        $demographics[$result->Index] = $result->Key;
+        $demographics[] = [
+          'index' => $result->Index,
+          'key' => $result->Key,
+          'alternatives' => $result->Alternatives,
+        ];
       }
     }
     return $demographics;

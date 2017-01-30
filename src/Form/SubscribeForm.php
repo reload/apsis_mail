@@ -72,6 +72,7 @@ class SubscribeForm extends FormBase {
     // exposed option.
     $build_info = $form_state->getBuildInfo();
     $allowedMailingLists = $apsis->getAllowedMailingLists();
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
 
     if (
       (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
@@ -85,6 +86,28 @@ class SubscribeForm extends FormBase {
         '#default_value' => [],
         '#required' => TRUE,
       ];
+
+      foreach ($allowedDemographicData as $demographic) {
+        $alternatives = $demographic['alternatives'];
+
+        $options = [];
+        $type = 'textfield';
+        if (count($alternatives) == 2) {
+          $type = 'checkbox';
+        }
+        elseif (count($alternatives) > 2) {
+          $type = 'select';
+          foreach ($alternatives as $alternative) {
+            $options[] = $alternative;
+          }
+        }
+        $form[$demographic['index']] = [
+          '#type' => $type,
+          '#title' => $demographic['key'],
+          '#options' => $options,
+          '#required' => $demographic['required'],
+        ];
+      }
     }
 
     // If there is only one mailinglist selected, and no explict exposed setting
@@ -132,8 +155,9 @@ class SubscribeForm extends FormBase {
 
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
-      $submit = $apsis->addSubscriber($list, $email, $name);
+      $submit = $apsis->addSubscriber($list, $email, $name, $demographic_data);
       drupal_set_message(t($submit->Message));
     }
   }
+
 }
