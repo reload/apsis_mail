@@ -38,7 +38,7 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
   $roles = $user->getRoles();
 
   // Get role settings and trim values.
-  $apsis_roles = $config->get('user_roles') ?: [];
+  $apsis_roles = $config->get('user_roles_allowed') ?: [];
   $allowed_roles = array_keys(array_filter($apsis_roles));
 
   // Proceed if roles are matching and there is allowed mailing lists.
