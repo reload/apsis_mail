@@ -12,7 +12,7 @@ class Apsis {
   /**
    * Configuration object.
    *
-   * @var class $config
+   * @var class
    */
   public $config;
 
@@ -33,7 +33,7 @@ class Apsis {
    * @param array $args
    *   Request header arguments.
    */
-  protected function request($method, $path, $args = []) {
+  protected function request($method, $path, array $args = []) {
     // Set options variables.
     $protocol = !empty($this->config->get('api_ssl')) ? 'https://' : 'http://';
     $key = !empty(\Drupal::state()->get('apsis_mail_api_key')) ? \Drupal::state()->get('apsis_mail_api_key') . ':@' : '';
@@ -87,7 +87,7 @@ class Apsis {
    * @return mixed
    *   The response from Apsis.
    */
-  protected function cachableRequest($method, $path, $args = []) {
+  protected function cachableRequest($method, $path, array $args = []) {
     $cid = 'apsis_mail:api:' . hash('sha256', var_export(func_get_args(), TRUE));
 
     // First check static cache, to avoid unnecessary queries to cache backend.
@@ -118,7 +118,7 @@ class Apsis {
   /**
    * Get single mailing list.
    *
-   * @return array $list.
+   * @return array
    *   Array containing allowed mailing lists.
    */
   public function getAllowedMailingLists() {
@@ -136,7 +136,7 @@ class Apsis {
   /**
    * Fetch mailing lists.
    *
-   * @return array $list
+   * @return array
    *   Array containing all mailing lists.
    */
   public function getMailingLists() {
@@ -284,7 +284,7 @@ class Apsis {
    * @param string $name
    *   Username.
    * @param array $demographic_data
-   *   Demographics.
+   *   Demographic data.
    */
   public function addSubscriber($list_id, $email, $name, array $demographic_data = []) {
     // Request options.
@@ -329,15 +329,16 @@ class Apsis {
     $config = \Drupal::config('apsis_mail.admin');
 
     // Get allowed list settings.
+    $allowed_demographic_data = [];
     foreach ($demographics as $demographic) {
       $key = $demographic['key'];
 
-      if ($config->get($key . '_available')) {
+      if ($config->get("demographic_available.$key")) {
         $allowed_demographic_data[] = [
           'key' => $demographic['key'],
           'index' => $demographic['index'],
           'alternatives' => $demographic['alternatives'],
-          'required' => ($config->get($key . '_required')) ? TRUE : FALSE,
+          'required' => ($config->get("demographic_required.$key")) ? TRUE : FALSE,
         ];
       }
     }

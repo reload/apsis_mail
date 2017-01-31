@@ -146,11 +146,12 @@ class SubscribeForm extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $apsis = \Drupal::service('apsis');
     $allowedDemographicData = $apsis->getAllowedDemographicData();
-    $demographic_data = [];
 
     // Get list id passed from build info.
     $build_info = $form_state->getBuildInfo();
-    $list_id = $build_info['args'][0];
+    if (!empty($build_info['args'])) {
+      $list_id = $build_info['args'][0];
+    }
 
     // Populate array with list id´s to subscribe.
     $subscribe_lists = [];
@@ -169,10 +170,9 @@ class SubscribeForm extends FormBase {
     foreach ($allowedDemographicData as $demographic) {
       $alternatives = $demographic['alternatives'];
       $chosen = $form_state->getValue($demographic['index']);
-      $true = $demographic['true'];
 
       if (count($alternatives) == 1) {
-        $value = ($chosen == 1) ? $alternatives[0] : $alternatives[1];
+        $value = ($chosen == 1) ? $alternatives[0] : NULL;
       }
 
       elseif (count($alternatives) == 0) {

@@ -146,13 +146,14 @@ class ApsisMailSettings extends ConfigFormBase {
           '#plain_text' => $key,
         ];
 
-        $form['demographic_data']['table'][$key][$key . '_available'] = [
+        $form['demographic_data']['table'][$key]['available'] = [
           '#type' => 'checkbox',
-          '#default_value' => $config->get($key . '_available'),
+          '#default_value' => $config->get("demographic_available.$key"),
         ];
-        $form['demographic_data']['table'][$key][$key . '_required'] = [
+
+        $form['demographic_data']['table'][$key]['required'] = [
           '#type' => 'checkbox',
-          '#default_value' => $config->get($key . '_required'),
+          '#default_value' => $config->get("demographic_required.$key"),
           '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
         ];
       }
@@ -177,10 +178,10 @@ class ApsisMailSettings extends ConfigFormBase {
 
     foreach ($demographics as $demographic) {
       $key = $demographic['key'];
-
+      $values = $form_state->getValues();
       $this->config('apsis_mail.admin')
-        ->set($key . '_available', $form_state->getValue($key . '_available'))
-        ->set($key . '_required', $form_state->getValue($key . '_required'))
+        ->set("demographic_available.$key", $values['table'][$key]['available'])
+        ->set("demographic_required.$key", $values['table'][$key]['required'])
         ->save();
     }
 
