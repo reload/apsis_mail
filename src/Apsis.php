@@ -283,8 +283,10 @@ class Apsis {
    *   Email address.
    * @param string $name
    *   Username.
+   * @param array $demographic_data
+   *   Demographics.
    */
-  public function addSubscriber($list_id, $email, $name) {
+  public function addSubscriber($list_id, $email, $name, array $demographic_data = []) {
     // Request options.
     $method = 'post';
     $path = '/v1/subscribers/mailinglist/' . $list_id . '/create';
@@ -292,6 +294,7 @@ class Apsis {
       'json' => [
         'Email' => $email,
         'Name' => $name,
+        'DemDataFields' => $demographic_data,
       ],
     ];
 
@@ -334,9 +337,7 @@ class Apsis {
           'key' => $demographic['key'],
           'index' => $demographic['index'],
           'alternatives' => $demographic['alternatives'],
-          'required' => $config->get($key . '_required'),
-          'bool' => $config->get($key . '_bool'),
-          'true' => $config->get($key . '_true'),
+          'required' => ($config->get($key . '_required')) ? TRUE : FALSE,
         ];
       }
     }

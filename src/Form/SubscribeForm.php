@@ -89,24 +89,34 @@ class SubscribeForm extends FormBase {
 
       foreach ($allowedDemographicData as $demographic) {
         $alternatives = $demographic['alternatives'];
+        $required = $demographic['required'];
+        $title = $demographic['key'];
 
-        $options = [];
-        $type = 'textfield';
-        if (count($alternatives) == 2) {
-          $type = 'checkbox';
-        }
-        elseif (count($alternatives) > 2) {
-          $type = 'select';
-          foreach ($alternatives as $alternative) {
-            $options[] = $alternative;
+        if ($alternatives) {
+          if (count($alternatives) == 1) {
+            $title = $alternatives[0];
+            $form[$demographic['index']] = [
+              '#type' => 'checkbox',
+              '#title' => $title,
+              '#required' => $required,
+            ];
+          }
+          if (count($alternatives) > 1) {
+            $form[$demographic['index']] = [
+              '#type' => 'select',
+              '#title' => $title,
+              '#options' => $alternatives,
+              '#required' => $required,
+            ];
           }
         }
-        $form[$demographic['index']] = [
-          '#type' => $type,
-          '#title' => $demographic['key'],
-          '#options' => $options,
-          '#required' => $demographic['required'],
-        ];
+        else {
+          $form[$demographic['index']] = [
+            '#type' => 'textfield',
+            '#title' => $title,
+            '#required' => $required,
+          ];
+        }
       }
     }
 
@@ -135,6 +145,8 @@ class SubscribeForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $apsis = \Drupal::service('apsis');
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
+    $demographic_data = [];
 
     // Get list id passed from build info.
     $build_info = $form_state->getBuildInfo();
@@ -152,6 +164,30 @@ class SubscribeForm extends FormBase {
     // Get subscriber info.
     $name = $form_state->getValue('name');
     $email = $form_state->getValue('email');
+
+    // Get demographic data.
+    foreach ($allowedDemographicData as $demographic) {
+      $alternatives = $demographic['alternatives'];
+      $chosen = $form_state->getValue($demographic['index']);
+      $true = $demographic['true'];
+
+      if (count($alternatives) == 1) {
+        $value = ($chosen == 1) ? $alternatives[0] : $alternatives[1];
+      }
+
+      elseif (count($alternatives) == 0) {
+        $value = $chosen;
+      }
+
+      else {
+        $value = $alternatives[$chosen];
+      }
+
+      $demographic_data[] = [
+        'Key' => $demographic['key'],
+        'Value' => $value,
+      ];
+    }
 
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {

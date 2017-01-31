@@ -130,6 +130,7 @@ class ApsisMailSettings extends ConfigFormBase {
       ];
 
       foreach ($apsis->getDemographicData() as $demographic) {
+        $alternatives = $demographic['alternatives'];
         $key = $demographic['key'];
 
         $form['demographic_data'][$key] = [
@@ -144,27 +145,7 @@ class ApsisMailSettings extends ConfigFormBase {
           '#default_value' => $config->get($key . '_available'),
         ];
 
-        if (count($demographic['alternatives']) == 2) {
-          $form['demographic_data'][$key][$key . '_bool'] = [
-            '#type' => 'checkbox',
-            '#title' => t('Is boolean'),
-            '#options' => $demographic['alternatives'],
-            '#description' => t('Check this, if the value should be considered as a boolean'),
-            '#default_value' => $config->get($key . '_bool'),
-          ];
-          $form['demographic_data'][$key][$key . '_true'] = [
-            '#type' => 'select',
-            '#title' => t('True value'),
-            '#options' => $demographic['alternatives'],
-            '#default_value' => $config->get($key . '_true'),
-            '#states' => array(
-              'invisible' => array(
-                ':input[name="' . $key . '_bool"]' => array('checked' => FALSE),
-              ),
-            ),
-          ];
-        }
-        else {
+        if (count($alternatives) > 1 || !$alternatives) {
           $form['demographic_data'][$key][$key . '_required'] = [
             '#type' => 'checkbox',
             '#title' => t('Required'),
@@ -203,8 +184,6 @@ class ApsisMailSettings extends ConfigFormBase {
       $this->config('apsis_mail.admin')
         ->set($key . '_available', $form_state->getValue($key . '_available'))
         ->set($key . '_required', $form_state->getValue($key . '_required'))
-        ->set($key . '_bool', $form_state->getValue($key . '_bool'))
-        ->set($key . '_true', $form_state->getValue($key . '_true'))
         ->save();
     }
 
