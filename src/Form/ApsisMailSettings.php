@@ -100,11 +100,11 @@ class ApsisMailSettings extends ConfigFormBase {
       ),
     ];
 
-    $form['user_roles']['user_roles_allowed'] = [
+    $form['user_roles']['user_roles'] = [
       '#type' => 'checkboxes',
       '#title' => t('Roles'),
       '#options' => $roles,
-      '#default_value' => $config->get('user_roles_allowed') ? $config->get('user_roles_allowed') : [],
+      '#default_value' => $config->get('user_roles') ? $config->get('user_roles') : [],
     ];
 
     if ($apsis->getMailingLists()) {
@@ -114,7 +114,7 @@ class ApsisMailSettings extends ConfigFormBase {
         '#description' => t('Globally allowed mailing lists on site'),
       ];
 
-      $form['mailing_lists']['mailing_lists_available'] = [
+      $form['mailing_lists']['mailing_lists'] = [
         '#type' => 'checkboxes',
         '#title' => t('Allowed mailing lists'),
         '#options' => $apsis->getMailingLists(),
@@ -171,7 +171,7 @@ class ApsisMailSettings extends ConfigFormBase {
     // Save states.
     \Drupal::state()->setMultiple([
       'apsis_mail_api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
-      'apsis_mail_mailing_lists' => $form_state->getValue('mailing_lists_available') ? array_filter($form_state->getValue('mailing_lists_available')) : [],
+      'apsis_mail_mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
     ]);
 
     // Save demographic data settings.
@@ -192,7 +192,7 @@ class ApsisMailSettings extends ConfigFormBase {
       ->set('api_url', $form_state->getValue('api_url'))
       ->set('api_ssl', $form_state->getValue('api_ssl'))
       ->set('api_port', $form_state->getValue('api_port'))
-      ->set('user_roles_allowed', $form_state->getValue('user_roles_allowed'))
+      ->set('user_roles', $form_state->getValue('user_roles'))
       ->save();
 
     drupal_set_message($this->t('Settings saved.'));
