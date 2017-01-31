@@ -125,39 +125,36 @@ class ApsisMailSettings extends ConfigFormBase {
     if ($apsis->getDemographicData()) {
       $form['demographic_data'] = [
         '#type' => 'details',
-        '#title' => t('Demographic data'),
+        '#title' => $this->t('Demographic data'),
         '#description' => t('Globally allowed demographic data on site'),
+      ];
+
+      $form['demographic_data']['table'] = [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('APSIS Parameter'),
+          $this->t('Available on block'),
+          $this->t('Required'),
+        ],
       ];
 
       foreach ($apsis->getDemographicData() as $demographic) {
         $alternatives = $demographic['alternatives'];
         $key = $demographic['key'];
 
-        $form['demographic_data'][$key] = [
-          '#type' => 'fieldset',
-          '#title' => $key,
+        $form['demographic_data']['table'][$key]['key'] = [
+          '#plain_text' => $key,
         ];
 
-        $form['demographic_data'][$key][$key . '_available'] = [
+        $form['demographic_data']['table'][$key][$key . '_available'] = [
           '#type' => 'checkbox',
-          '#title' => t('Available on block'),
-          '#description' => t('Visible on the subscription block'),
           '#default_value' => $config->get($key . '_available'),
         ];
-
-        if (count($alternatives) > 1 || !$alternatives) {
-          $form['demographic_data'][$key][$key . '_required'] = [
-            '#type' => 'checkbox',
-            '#title' => t('Required'),
-            '#description' => t('Required on the subscription block'),
-            '#default_value' => $config->get($key . '_required'),
-            '#states' => array(
-              'invisible' => array(
-                ':input[name="' . $key . '_available"]' => array('checked' => FALSE),
-              ),
-            ),
-          ];
-        }
+        $form['demographic_data']['table'][$key][$key . '_required'] = [
+          '#type' => 'checkbox',
+          '#default_value' => $config->get($key . '_required'),
+          '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
+        ];
       }
     }
 
