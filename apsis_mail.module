@@ -80,7 +80,7 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
       switch (count($alternatives)) {
         case 0:
           // If there's no alternatives in APSIS, render as a textfield.
-          $form['apsis_demographic_data']['content'][$demographic['key']] = [
+          $form['apsis_demographic_data']['textfield'][$demographic['key']] = [
             '#title' => $demographic['key'],
             '#type' => 'textfield',
             '#required' => $required,
@@ -89,7 +89,7 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
 
         case 1:
           // If there's only one alternative, render as a checkbox.
-          $form['apsis_demographic_data']['content'][$demographic['key']] = [
+          $form['apsis_demographic_data']['checkbox'][$demographic['key']] = [
             '#title' => $alternatives[0],
             '#type' => 'checkbox',
             '#options' => $alternatives[0],
@@ -98,7 +98,7 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
 
         default:
           // If there's more than one alternative, render as a select.
-          $form['apsis_demographic_data']['content'][$demographic['key']] = [
+          $form['apsis_demographic_data']['select'][$demographic['key']] = [
             '#title' => $demographic['key'],
             '#type' => 'select',
             '#options' => $alternatives,
