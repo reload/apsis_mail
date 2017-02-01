@@ -335,7 +335,7 @@ class Apsis {
 
       if ($config->get("demographic_available.$key")) {
         $allowed_demographic_data[] = [
-          'key' => $demographic['key'],
+          'key' => $key,
           'index' => $demographic['index'],
           'alternatives' => $demographic['alternatives'],
           'required' => ($config->get("demographic_required.$key")) ? TRUE : FALSE,
