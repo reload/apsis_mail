@@ -12,7 +12,7 @@ class Apsis {
   /**
    * Configuration object.
    *
-   * @var class $config
+   * @var class
    */
   public $config;
 
@@ -33,7 +33,7 @@ class Apsis {
    * @param array $args
    *   Request header arguments.
    */
-  protected function request($method, $path, $args = []) {
+  protected function request($method, $path, array $args = []) {
     // Set options variables.
     $protocol = !empty($this->config->get('api_ssl')) ? 'https://' : 'http://';
     $key = !empty(\Drupal::state()->get('apsis_mail_api_key')) ? \Drupal::state()->get('apsis_mail_api_key') . ':@' : '';
@@ -87,7 +87,7 @@ class Apsis {
    * @return mixed
    *   The response from Apsis.
    */
-  protected function cachableRequest($method, $path, $args = []) {
+  protected function cachableRequest($method, $path, array $args = []) {
     $cid = 'apsis_mail:api:' . hash('sha256', var_export(func_get_args(), TRUE));
 
     // First check static cache, to avoid unnecessary queries to cache backend.
@@ -118,7 +118,7 @@ class Apsis {
   /**
    * Get single mailing list.
    *
-   * @return array $list.
+   * @return array
    *   Array containing allowed mailing lists.
    */
   public function getAllowedMailingLists() {
@@ -136,7 +136,7 @@ class Apsis {
   /**
    * Fetch mailing lists.
    *
-   * @return array $list
+   * @return array
    *   Array containing all mailing lists.
    */
   public function getMailingLists() {
@@ -283,8 +283,10 @@ class Apsis {
    *   Email address.
    * @param string $name
    *   Username.
+   * @param array $demographic_data
+   *   Demographic data.
    */
-  public function addSubscriber($list_id, $email, $name) {
+  public function addSubscriber($list_id, $email, $name, array $demographic_data = []) {
     // Request options.
     $method = 'post';
     $path = '/v1/subscribers/mailinglist/' . $list_id . '/create';
@@ -292,6 +294,7 @@ class Apsis {
       'json' => [
         'Email' => $email,
         'Name' => $name,
+        'DemDataFields' => $demographic_data,
       ],
     ];
 
@@ -310,6 +313,68 @@ class Apsis {
     );
 
     return $contents;
+  }
+
+  /**
+   * Get a list of allowed demographic data.
+   *
+   * @return array
+   *   Allowed demographic data.
+   */
+  public function getAllowedDemographicData() {
+    // Get all lists.
+    $demographics = $this->getDemographicData();
+
+    // Get config.
+    $config = \Drupal::config('apsis_mail.admin');
+
+    // Get allowed list settings.
+    $allowed_demographic_data = [];
+    foreach ($demographics as $demographic) {
+      $key = $demographic['key'];
+
+      if ($config->get("demographic_available.$key")) {
+        $allowed_demographic_data[] = [
+          'key' => $key,
+          'index' => $demographic['index'],
+          'alternatives' => $demographic['alternatives'],
+          'required' => ($config->get("demographic_required.$key")) ? TRUE : FALSE,
+        ];
+      }
+    }
+
+    return $allowed_demographic_data;
+  }
+
+  /**
+   * Returns demographic data fields.
+   *
+   * @return array
+   *   The demographics from the APSIS account.
+   */
+  public function getDemographicData() {
+    // Request options.
+    $method = 'get';
+    $path = '/accounts/v2/demographics';
+    $args = [
+      'headers' => [
+        'Content-length' => 0,
+      ],
+    ];
+    // Get request content.
+    $contents = $this->cachableRequest($method, $path, $args);
+    // Populate array for demographics.
+    $demographics = [];
+    if (!empty($contents)) {
+      foreach ($contents->Result->Demographics as $result) {
+        $demographics[] = [
+          'index' => $result->Index,
+          'key' => $result->Key,
+          'alternatives' => $result->Alternatives,
+        ];
+      }
+    }
+    return $demographics;
   }
 
 }

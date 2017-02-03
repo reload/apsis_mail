@@ -59,28 +59,49 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
     // Get allowed mailing lists.
     $mailing_lists = $apsis->getAllowedMailingLists();
 
-    if (!empty($mailing_lists)) {
-      // Add 'exposed' option.
-      $exposed = ['exposed' => t('Let user choose')];
-      $mailing_lists = $exposed + $mailing_lists;
+    // Get allowed demographic data.
+    $demographic_data = $apsis->getAllowedDemographicData();
 
-      $form['mailing_list'] = [
-        '#type' => 'select',
-        '#title' => $this->t('Mailing list'),
-        '#description' => t('Mailing list to use'),
-        '#options' => $mailing_lists,
-        '#default_value' => !empty($config['mailing_list']) ? $config['mailing_list'] : 'exposed' ,
-        '#required' => TRUE,
-      ];
-    }
-
-    else {
+    // Display a link to the admin configuration,
+    // if there is no allowed mailing lists.
+    if (empty($mailing_lists)) {
       // Get admin link.
       $url = Url::fromRoute('apsis_mail.admin');
       $link = \Drupal::l($this->t('admin page'), $url);
       // Set no lists message.
-      $message = t('No mailing lists are set, go to the @link to configure.', ['@link' => $link]);
+      $message = t('No allowed mailing lists are set, go to the @link to configure.', ['@link' => $link]);
       drupal_set_message($message, 'error');
+    }
+
+    else {
+      if (!empty($mailing_lists)) {
+        // Add 'exposed' option.
+        $exposed = ['exposed' => t('Let user choose')];
+        $mailing_lists = $exposed + $mailing_lists;
+
+        $form['mailing_list'] = [
+          '#type' => 'select',
+          '#title' => $this->t('Mailing list'),
+          '#description' => t('Mailing list to use'),
+          '#options' => $mailing_lists,
+          '#default_value' => !empty($config['mailing_list']) ? $config['mailing_list'] : 'exposed' ,
+          '#required' => TRUE,
+        ];
+      }
+
+      if (!empty($demographic_data)) {
+        // Add 'exposed' option.
+        $exposed = ['exposed' => t('Let user choose')];
+        $demographic_data = $exposed + $demographic_data;
+        $form['demographic_data'] = [
+          '#type' => 'select',
+          '#title' => $this->t('Demographic data'),
+          '#description' => t('Demographic data to use'),
+          '#options' => $demographic_data,
+          '#default_value' => !empty($config['demographic_data']) ? $config['demographic_data'] : 'exposed' ,
+          '#required' => TRUE,
+        ];
+      }
     }
 
     return $form;
@@ -92,6 +113,7 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
   public function blockSubmit($form, FormStateInterface $form_state) {
     $this->setConfigurationValue('body', $form_state->getValue('body'));
     $this->setConfigurationValue('mailing_list', $form_state->getValue('mailing_list'));
+    $this->setConfigurationValue('demographic_data', $form_state->getValue('demographic_data'));
   }
 
   /**
@@ -108,7 +130,7 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
     }
 
     // Get form.
-    $form = \Drupal::formBuilder()->getForm('Drupal\apsis_mail\Form\SubscribeForm', $config['mailing_list']);
+    $form = \Drupal::formBuilder()->getForm('Drupal\apsis_mail\Form\SubscribeForm', $config['mailing_list'], $config['demographic_data']);
 
     // Put body content into a render array.
     $body = [
