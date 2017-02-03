@@ -87,6 +87,10 @@ class SubscribeForm extends FormBase {
         '#required' => TRUE,
       ];
 
+      $form['demographic_data'] = [
+        '#type' => 'container',
+      ];
+
       foreach ($allowedDemographicData as $demographic) {
         $alternatives = $demographic['alternatives'];
         $required = $demographic['required'];
@@ -95,14 +99,14 @@ class SubscribeForm extends FormBase {
         if ($alternatives) {
           if (count($alternatives) == 1) {
             $title = $alternatives[0];
-            $form[$demographic['index']] = [
+            $form['demographic_data']['demographic_data_' . $demographic['index']] = [
               '#type' => 'checkbox',
               '#title' => $title,
               '#required' => $required,
             ];
           }
           if (count($alternatives) > 1) {
-            $form[$demographic['index']] = [
+            $form['demographic_data']['demographic_data_' . $demographic['index']] = [
               '#type' => 'select',
               '#title' => $title,
               '#options' => $alternatives,
@@ -111,7 +115,7 @@ class SubscribeForm extends FormBase {
           }
         }
         else {
-          $form[$demographic['index']] = [
+          $form['demographic_data']['demographic_data_' . $demographic['index']] = [
             '#type' => 'textfield',
             '#title' => $title,
             '#required' => $required,
@@ -169,7 +173,7 @@ class SubscribeForm extends FormBase {
     // Get demographic data.
     foreach ($allowedDemographicData as $demographic) {
       $alternatives = $demographic['alternatives'];
-      $chosen = $form_state->getValue($demographic['index']);
+      $chosen = $form_state->getValue('demographic_data_' . $demographic['index']);
 
       if (count($alternatives) == 1) {
         $value = ($chosen == 1) ? $alternatives[0] : NULL;
