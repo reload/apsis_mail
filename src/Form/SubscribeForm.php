@@ -72,6 +72,7 @@ class SubscribeForm extends FormBase {
     // exposed option.
     $build_info = $form_state->getBuildInfo();
     $allowedMailingLists = $apsis->getAllowedMailingLists();
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
 
     if (
       (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
@@ -85,6 +86,38 @@ class SubscribeForm extends FormBase {
         '#default_value' => [],
         '#required' => TRUE,
       ];
+
+      foreach ($allowedDemographicData as $demographic) {
+        $alternatives = $demographic['alternatives'];
+        $required = $demographic['required'];
+        $title = $demographic['key'];
+
+        if ($alternatives) {
+          if (count($alternatives) == 1) {
+            $title = $alternatives[0];
+            $form[$demographic['index']] = [
+              '#type' => 'checkbox',
+              '#title' => $title,
+              '#required' => $required,
+            ];
+          }
+          if (count($alternatives) > 1) {
+            $form[$demographic['index']] = [
+              '#type' => 'select',
+              '#title' => $title,
+              '#options' => $alternatives,
+              '#required' => $required,
+            ];
+          }
+        }
+        else {
+          $form[$demographic['index']] = [
+            '#type' => 'textfield',
+            '#title' => $title,
+            '#required' => $required,
+          ];
+        }
+      }
     }
 
     // If there is only one mailinglist selected, and no explict exposed setting
@@ -112,10 +145,13 @@ class SubscribeForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $apsis = \Drupal::service('apsis');
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
 
     // Get list id passed from build info.
     $build_info = $form_state->getBuildInfo();
-    $list_id = $build_info['args'][0];
+    if (!empty($build_info['args'])) {
+      $list_id = $build_info['args'][0];
+    }
 
     // Populate array with list id´s to subscribe.
     $subscribe_lists = [];
@@ -130,10 +166,34 @@ class SubscribeForm extends FormBase {
     $name = $form_state->getValue('name');
     $email = $form_state->getValue('email');
 
+    // Get demographic data.
+    foreach ($allowedDemographicData as $demographic) {
+      $alternatives = $demographic['alternatives'];
+      $chosen = $form_state->getValue($demographic['index']);
+
+      if (count($alternatives) == 1) {
+        $value = ($chosen == 1) ? $alternatives[0] : NULL;
+      }
+
+      elseif (count($alternatives) == 0) {
+        $value = $chosen;
+      }
+
+      else {
+        $value = $alternatives[$chosen];
+      }
+
+      $demographic_data[] = [
+        'Key' => $demographic['key'],
+        'Value' => $value,
+      ];
+    }
+
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
-      $submit = $apsis->addSubscriber($list, $email, $name);
+      $submit = $apsis->addSubscriber($list, $email, $name, $demographic_data);
       drupal_set_message(t($submit->Message));
     }
   }
+
 }
