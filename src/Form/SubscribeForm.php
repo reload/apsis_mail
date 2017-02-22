@@ -86,7 +86,9 @@ class SubscribeForm extends FormBase {
         '#default_value' => [],
         '#required' => TRUE,
       ];
+    }
 
+    if (count($allowedDemographicData > 0)) {
       $form['demographic_data'] = [
         '#type' => 'container',
       ];
