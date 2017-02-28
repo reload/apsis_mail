@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * @file
+ * Install, update, and uninstall functions for the Apsis mail module.
+ */
+function apsis_mail_uninstall() {
+  // Destroy state.
+  \Drupal::state()->delete('apsis_mail.api_key');
+  \Drupal::state()->delete('apsis_mail.mailing_lists');
+}
