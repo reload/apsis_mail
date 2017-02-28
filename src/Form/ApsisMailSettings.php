@@ -32,8 +32,8 @@ class ApsisMailSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     // Get config and states.
     $config = $this->config('apsis_mail.admin');
-    $api_key = \Drupal::state()->get('apsis_mail_api_key');
-    $mailing_lists = \Drupal::state()->get('apsis_mail_mailing_lists');
+    $api_key = \Drupal::state()->get('apsis_mail.api_key');
+    $mailing_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
 
     // Invoke Apsis service.
     $apsis = \Drupal::service('apsis');
@@ -168,8 +168,8 @@ class ApsisMailSettings extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Save states.
     \Drupal::state()->setMultiple([
-      'apsis_mail_api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
-      'apsis_mail_mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
+      'apsis_mail.api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
+      'apsis_mail.mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
     ]);
 
     // Save demographic data settings.

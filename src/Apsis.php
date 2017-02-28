@@ -36,7 +36,7 @@ class Apsis {
   protected function request($method, $path, array $args = []) {
     // Set options variables.
     $protocol = !empty($this->config->get('api_ssl')) ? 'https://' : 'http://';
-    $key = !empty(\Drupal::state()->get('apsis_mail_api_key')) ? \Drupal::state()->get('apsis_mail_api_key') . ':@' : '';
+    $key = !empty(\Drupal::state()->get('apsis_mail.api_key')) ? \Drupal::state()->get('apsis_mail.api_key') . ':@' : '';
     $url = !empty($this->config->get('api_url')) ? $this->config->get('api_url') : '';
     $port = !empty($this->config->get('api_port')) && $this->config->get('api_ssl') ? ':' . $this->config->get('api_port') : '';
     $args['headers']['Authorization'] = 'Basic ' . base64_encode($key);
@@ -125,7 +125,7 @@ class Apsis {
     // Get all lists.
     $mailing_lists = $this->getMailingLists();
     // Get allowed list settings.
-    $allowed_lists = \Drupal::state()->get('apsis_mail_mailing_lists');
+    $allowed_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
 
     // Return list with allowed list items.
     if (!empty($allowed_lists)) {
