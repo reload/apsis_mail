@@ -263,7 +263,7 @@ class Apsis {
 
     // Set log message.
     \Drupal::logger('apsis_mail')->info(
-      $this->t('User: @email unsubscribed from @list (@list_id).', [
+      t('User: @email unsubscribed from @list (@list_id).', [
         '@email' => $email,
         '@list' => $list_info->Name,
         '@list_id' => $list_id,
@@ -304,7 +304,7 @@ class Apsis {
     $contents = $this->request($method, $path, $args);
 
     \Drupal::logger('apsis_mail')->info(
-      $this->t('@name (@email) subscribed to @list (@list_id).', [
+      t('@name (@email) subscribed to @list (@list_id).', [
         '@name' => $name,
         '@email' => $email,
         '@list' => $list_info->Name,
