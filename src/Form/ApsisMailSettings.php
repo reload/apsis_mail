@@ -34,6 +34,7 @@ class ApsisMailSettings extends ConfigFormBase {
     $config = $this->config('apsis_mail.admin');
     $api_key = \Drupal::state()->get('apsis_mail.api_key');
     $mailing_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
+    $demographic_data = \Drupal::state()->get('apsis_mail.demographic_data');
 
     // Invoke Apsis service.
     $apsis = \Drupal::service('apsis');
@@ -129,7 +130,7 @@ class ApsisMailSettings extends ConfigFormBase {
         '#description' => t('Globally allowed demographic data on site'),
       ];
 
-      $form['demographic_data']['table'] = [
+      $form['demographic_data']['demographic_data'] = [
         '#type' => 'table',
         '#header' => [
           $this->t('APSIS Parameter'),
@@ -138,22 +139,23 @@ class ApsisMailSettings extends ConfigFormBase {
         ],
       ];
 
+      kint($demographic_data);
       foreach ($apsis->getDemographicData() as $demographic) {
         $alternatives = $demographic['alternatives'];
         $key = $demographic['key'];
 
-        $form['demographic_data']['table'][$key]['key'] = [
+        $form['demographic_data']['demographic_data'][$key]['key'] = [
           '#plain_text' => $key,
         ];
 
-        $form['demographic_data']['table'][$key]['available'] = [
+        $form['demographic_data']['demographic_data'][$key]['available'] = [
           '#type' => 'checkbox',
-          '#default_value' => $config->get("demographic_available.$key"),
+          '#default_value' => $demographic_data[$key]['available'],
         ];
 
-        $form['demographic_data']['table'][$key]['required'] = [
+        $form['demographic_data']['demographic_data'][$key]['required'] = [
           '#type' => 'checkbox',
-          '#default_value' => $config->get("demographic_required.$key"),
+          '#default_value' => $demographic_data[$key]['required'],
           '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
         ];
       }
@@ -170,20 +172,8 @@ class ApsisMailSettings extends ConfigFormBase {
     \Drupal::state()->setMultiple([
       'apsis_mail.api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
       'apsis_mail.mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
+      'apsis_mail.demographic_data' => $form_state->getValue('demographic_data') ? array_filter($form_state->getValue('demographic_data')) : [],
     ]);
-
-    // Save demographic data settings.
-    $apsis = \Drupal::service('apsis');
-    $demographics = $apsis->getDemographicData();
-
-    foreach ($demographics as $demographic) {
-      $key = $demographic['key'];
-      $values = $form_state->getValues();
-      $this->config('apsis_mail.admin')
-        ->set("demographic_available.$key", $values['table'][$key]['available'])
-        ->set("demographic_required.$key", $values['table'][$key]['required'])
-        ->save();
-    }
 
     // Save settings.
     $this->config('apsis_mail.admin')
