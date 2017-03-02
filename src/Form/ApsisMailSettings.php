@@ -139,7 +139,6 @@ class ApsisMailSettings extends ConfigFormBase {
         ],
       ];
 
-      kint($demographic_data);
       foreach ($apsis->getDemographicData() as $demographic) {
         $alternatives = $demographic['alternatives'];
         $key = $demographic['key'];
@@ -150,12 +149,12 @@ class ApsisMailSettings extends ConfigFormBase {
 
         $form['demographic_data']['demographic_data'][$key]['available'] = [
           '#type' => 'checkbox',
-          '#default_value' => $demographic_data[$key]['available'],
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['available'] : '',
         ];
 
         $form['demographic_data']['demographic_data'][$key]['required'] = [
           '#type' => 'checkbox',
-          '#default_value' => $demographic_data[$key]['required'],
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['required'] : '',
           '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
         ];
       }
