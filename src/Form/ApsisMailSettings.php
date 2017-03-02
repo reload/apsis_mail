@@ -41,33 +41,33 @@ class ApsisMailSettings extends ConfigFormBase {
 
     $form['api'] = [
       '#type' => 'fieldset',
-      '#title' => t('API'),
+      '#title' => $this->t('API'),
     ];
 
     $form['api']['api_key'] = [
       '#type' => 'textfield',
-      '#title' => t('Key'),
-      '#description' => t('API key goes here.'),
+      '#title' => $this->t('Key'),
+      '#description' => $this->t('API key goes here.'),
       '#default_value' => $api_key,
     ];
 
     $form['api']['endpoint'] = [
       '#type' => 'details',
-      '#title' => t('Endpoint'),
+      '#title' => $this->t('Endpoint'),
       '#open' => FALSE,
     ];
 
     $form['api']['endpoint']['api_url'] = [
       '#type' => 'textfield',
-      '#title' => t('URL'),
-      '#description' => t('URL to API method.'),
+      '#title' => $this->t('URL'),
+      '#description' => $this->t('URL to API method.'),
       '#default_value' => $config->get('api_url'),
     ];
 
     $form['api']['endpoint']['api_ssl'] = [
       '#type' => 'checkbox',
-      '#title' => t('Use SSL'),
-      '#description' => t('Use secure connection.'),
+      '#title' => $this->t('Use SSL'),
+      '#description' => $this->t('Use secure connection.'),
       '#default_value' => $config->get('api_ssl'),
     ];
 
@@ -111,13 +111,13 @@ class ApsisMailSettings extends ConfigFormBase {
     if ($apsis->getMailingLists()) {
       $form['mailing_lists'] = [
         '#type' => 'details',
-        '#title' => t('Mailing lists'),
-        '#description' => t('Globally allowed mailing lists on site'),
+        '#title' => $this->t('Mailing lists'),
+        '#description' => $this->t('Globally allowed mailing lists on site'),
       ];
 
       $form['mailing_lists']['mailing_lists'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Allowed mailing lists'),
+        '#title' => $this->t('Allowed mailing lists'),
         '#options' => $apsis->getMailingLists(),
         '#default_value' => $mailing_lists ? $mailing_lists : [],
       ];
@@ -127,7 +127,7 @@ class ApsisMailSettings extends ConfigFormBase {
       $form['demographic_data'] = [
         '#type' => 'details',
         '#title' => $this->t('Demographic data'),
-        '#description' => t('Globally allowed demographic data on site'),
+        '#description' => $this->t('Globally allowed demographic data on site'),
       ];
 
       $form['demographic_data']['demographic_data'] = [

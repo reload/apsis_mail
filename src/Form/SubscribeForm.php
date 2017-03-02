@@ -34,18 +34,18 @@ class SubscribeForm extends FormBase {
 
     $form['name'] = array(
       '#type' => 'textfield',
-      '#title' => t('Name'),
+      '#title' => $this->t('Name'),
       '#attributes' => [
-        'placeholder' => t('Name'),
+        'placeholder' => $this->t('Name'),
       ],
       '#required' => TRUE,
     );
 
     $form['email'] = array(
       '#type' => 'email',
-      '#title' => t('Email address'),
+      '#title' => $this->t('Email address'),
       '#attributes' => [
-        'placeholder' => t('Email'),
+        'placeholder' => $this->t('Email'),
       ],
       '#required' => TRUE,
     );
@@ -90,7 +90,7 @@ class SubscribeForm extends FormBase {
           if (count($alternatives) == 1) {
             $form['demographic_data']['demographic_data_' . $demographic['index']] = [
               '#type' => 'checkbox',
-              '#title' => $key,
+              '#title' => $alternatives[0],
               '#required' => $required,
             ];
           }
@@ -119,8 +119,8 @@ class SubscribeForm extends FormBase {
     ) {
       $form['exposed_lists'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Mailing lists'),
-        '#description' => t('Mailing lists to subscribe to.'),
+        '#title' => $this->t('Mailing lists'),
+        '#description' => $this->t('Mailing lists to subscribe to.'),
         '#options' => $allowedMailingLists,
         '#default_value' => [],
         '#required' => TRUE,
@@ -199,7 +199,7 @@ class SubscribeForm extends FormBase {
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
       $submit = $apsis->addSubscriber($list, $email, $name, $demographic_data);
-      drupal_set_message(t('Submitted!'));
+      drupal_set_message($this->t('Submitted!'));
     }
   }
 
