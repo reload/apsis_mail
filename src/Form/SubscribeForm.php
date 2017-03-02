@@ -74,33 +74,13 @@ class SubscribeForm extends FormBase {
     $allowedMailingLists = $apsis->getAllowedMailingLists();
     $allowedDemographicData = $apsis->getAllowedDemographicData();
 
-    if (
-      (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
-      (!empty($build_info['args'][0]) && $build_info['args'][0] === 'exposed')
-    ) {
-      $form['exposed_lists'] = [
-        '#type' => 'checkboxes',
-        '#title' => t('Mailing lists'),
-        '#description' => t('Mailing lists to subscribe to.'),
-        '#options' => $allowedMailingLists,
-        '#default_value' => [],
-        '#required' => TRUE,
-      ];
-    }
-
     if (count($allowedDemographicData > 0)) {
       $form['demographic_data'] = [
         '#type' => 'container',
       ];
     }
 
-    // If there is only one mailinglist selected, and no explict exposed setting
-    // set, we'll not expose controls to the user.
-    if (empty($build_info['args'][0]) && count($allowedMailingLists) == 1) {
-      $build_info['args'][0] = key($allowedMailingLists);
-      $form_state->setBuildInfo($build_info);
-    }
-
+    // Demographics.
     if ($build_info['args'] && $build_info['args'][1]) {
       foreach ($allowedDemographicData as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
@@ -131,6 +111,27 @@ class SubscribeForm extends FormBase {
           ];
         }
       }
+    }
+
+    if (
+      (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
+      (!empty($build_info['args'][0]) && $build_info['args'][0] === 'exposed')
+    ) {
+      $form['exposed_lists'] = [
+        '#type' => 'checkboxes',
+        '#title' => t('Mailing lists'),
+        '#description' => t('Mailing lists to subscribe to.'),
+        '#options' => $allowedMailingLists,
+        '#default_value' => [],
+        '#required' => TRUE,
+      ];
+    }
+
+    // If there is only one mailinglist selected, and no explict exposed setting
+    // set, we'll not expose controls to the user.
+    if (empty($build_info['args'][0]) && count($allowedMailingLists) == 1) {
+      $build_info['args'][0] = key($allowedMailingLists);
+      $form_state->setBuildInfo($build_info);
     }
 
     return $form;
