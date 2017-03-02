@@ -90,16 +90,11 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
       }
 
       if (!empty($demographic_data)) {
-        // Add 'exposed' option.
-        $exposed = ['exposed' => t('Let user choose')];
-        $demographic_data = $exposed + $demographic_data;
         $form['demographic_data'] = [
-          '#type' => 'select',
-          '#title' => $this->t('Demographic data'),
-          '#description' => t('Demographic data to use'),
-          '#options' => $demographic_data,
-          '#default_value' => !empty($config['demographic_data']) ? $config['demographic_data'] : 'exposed' ,
-          '#required' => TRUE,
+          '#type' => 'checkbox',
+          '#title' => $this->t('Show demographic data'),
+          '#description' => $this->t('Expose demographic data fields to user.'),
+          '#default_value' => !empty($config['demographic_data']) ? $config['demographic_data'] : '' ,
         ];
       }
     }

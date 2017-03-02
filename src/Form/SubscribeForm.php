@@ -92,25 +92,32 @@ class SubscribeForm extends FormBase {
       $form['demographic_data'] = [
         '#type' => 'container',
       ];
+    }
 
-      foreach ($allowedDemographicData as $demographic) {
+    // If there is only one mailinglist selected, and no explict exposed setting
+    // set, we'll not expose controls to the user.
+    if (empty($build_info['args'][0]) && count($allowedMailingLists) == 1) {
+      $build_info['args'][0] = key($allowedMailingLists);
+      $form_state->setBuildInfo($build_info);
+    }
+
+    if ($build_info['args'] && $build_info['args'][1]) {
+      foreach ($allowedDemographicData as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
         $required = $demographic['required'];
-        $title = $demographic['key'];
 
         if ($alternatives) {
           if (count($alternatives) == 1) {
-            $title = $alternatives[0];
             $form['demographic_data']['demographic_data_' . $demographic['index']] = [
               '#type' => 'checkbox',
-              '#title' => $title,
+              '#title' => $key,
               '#required' => $required,
             ];
           }
           if (count($alternatives) > 1) {
             $form['demographic_data']['demographic_data_' . $demographic['index']] = [
               '#type' => 'select',
-              '#title' => $title,
+              '#title' => $key,
               '#options' => $alternatives,
               '#required' => $required,
             ];
@@ -119,18 +126,11 @@ class SubscribeForm extends FormBase {
         else {
           $form['demographic_data']['demographic_data_' . $demographic['index']] = [
             '#type' => 'textfield',
-            '#title' => $title,
+            '#title' => $key,
             '#required' => $required,
           ];
         }
       }
-    }
-
-    // If there is only one mailinglist selected, and no explict exposed setting
-    // set, we'll not expose controls to the user.
-    if (empty($build_info['args'][0]) && count($allowedMailingLists) == 1) {
-      $build_info['args'][0] = key($allowedMailingLists);
-      $form_state->setBuildInfo($build_info);
     }
 
     return $form;
@@ -173,7 +173,7 @@ class SubscribeForm extends FormBase {
     $email = $form_state->getValue('email');
 
     // Get demographic data.
-    foreach ($allowedDemographicData as $demographic) {
+    foreach ($allowedDemographicData as $key => $demographic) {
       $alternatives = $demographic['alternatives'];
       $chosen = $form_state->getValue('demographic_data_' . $demographic['index']);
 
@@ -190,7 +190,7 @@ class SubscribeForm extends FormBase {
       }
 
       $demographic_data[] = [
-        'Key' => $demographic['key'],
+        'Key' => $key,
         'Value' => $value,
       ];
     }
@@ -198,7 +198,7 @@ class SubscribeForm extends FormBase {
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
       $submit = $apsis->addSubscriber($list, $email, $name, $demographic_data);
-      drupal_set_message(t($submit->Message));
+      drupal_set_message(t('Submitted!'));
     }
   }
 

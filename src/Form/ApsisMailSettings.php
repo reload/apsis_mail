@@ -139,9 +139,8 @@ class ApsisMailSettings extends ConfigFormBase {
         ],
       ];
 
-      foreach ($apsis->getDemographicData() as $demographic) {
+      foreach ($apsis->getDemographicData() as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
-        $key = $demographic['key'];
 
         $form['demographic_data']['demographic_data'][$key]['key'] = [
           '#plain_text' => $key,

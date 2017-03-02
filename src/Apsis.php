@@ -129,7 +129,7 @@ class Apsis {
 
     // Return list with allowed list items.
     if (!empty($allowed_lists)) {
-      return array_intersect_key($mailing_lists, array_flip($allowed_lists));;
+      return array_intersect_key($mailing_lists, array_flip($allowed_lists));
     }
   }
 
@@ -323,26 +323,21 @@ class Apsis {
    */
   public function getAllowedDemographicData() {
     // Get all lists.
-    $demographics = $this->getDemographicData();
-
+    $all_demographics = $this->getDemographicData();
     // Get config.
-    $config = \Drupal::config('apsis_mail.admin');
+    $allowed_demographics = \Drupal::state()->get('apsis_mail.demographic_data');
 
     // Get allowed list settings.
     $allowed_demographic_data = [];
-    foreach ($demographics as $demographic) {
-      $key = $demographic['key'];
-
-      if ($config->get("demographic_available.$key")) {
-        $allowed_demographic_data[] = [
-          'key' => $key,
-          'index' => $demographic['index'],
-          'alternatives' => $demographic['alternatives'],
-          'required' => ($config->get("demographic_required.$key")) ? TRUE : FALSE,
+    foreach ($allowed_demographics as $key => $demographic) {
+      if ($demographic['available']) {
+        $allowed_demographic_data[$key] = [
+          'index' => $all_demographics[$key]['index'],
+          'alternatives' => $all_demographics[$key]['alternatives'],
+          'required' => boolval($demographic['required']),
         ];
       }
     }
-
     return $allowed_demographic_data;
   }
 
@@ -367,9 +362,8 @@ class Apsis {
     $demographics = [];
     if (!empty($contents)) {
       foreach ($contents->Result->Demographics as $result) {
-        $demographics[] = [
+        $demographics[$result->Key] = [
           'index' => $result->Index,
-          'key' => $result->Key,
           'alternatives' => $result->Alternatives,
         ];
       }
