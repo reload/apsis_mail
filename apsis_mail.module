@@ -54,21 +54,16 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
       }
     }
 
-    // Add mailing lists element to form.
-    $form['apsis_newsletter_signup'] = [
-      '#type' => 'checkboxes',
-      '#title' => t('Newsletters'),
-      '#description' => t('Subscribe to newsletter.'),
-      '#default_value' => $lists_subscribed,
-      '#options' => $mailing_lists,
-      // Since this is a faux field, we put it last.
-      '#weight' => 50,
+    $form['apsis'] = [
+      '#type' => 'container',
+      // Since these are faux fields, we put them last.
+      '#weight' => 49,
     ];
 
     // Render demographic data.
     $allowedDemographicData = $apsis->getAllowedDemographicData();
 
-    $form['apsis_demographic_data'] = [
+    $form['apsis']['apsis_demographic_data'] = [
       '#type' => 'fieldset',
       '#title' => t('Demographic data'),
       '#tree' => TRUE,
@@ -78,8 +73,17 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
       $alternatives = $demographic['alternatives'];
       $required = $demographic['required'];
 
-      $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+      $form['apsis']['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
     }
+
+    // Add mailing lists element to form.
+    $form['apsis']['apsis_newsletter_signup'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Newsletters'),
+      '#description' => t('Subscribe to newsletter.'),
+      '#default_value' => $lists_subscribed,
+      '#options' => $mailing_lists,
+    ];
 
     // Add submit handler.
     $form['actions']['submit']['#submit'][] = '_apsis_mail_submit';
