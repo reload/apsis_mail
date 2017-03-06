@@ -331,9 +331,14 @@ class Apsis {
     $allowed_demographic_data = [];
     foreach ($allowed_demographics as $key => $demographic) {
       if ($demographic['available']) {
+        // Set value as key for alternatives.
+        $alternatives = [];
+        foreach ($all_demographics[$key]['alternatives'] as $alternative) {
+          $alternatives[$alternative] = $alternative;
+        }
         $allowed_demographic_data[$key] = [
           'index' => $all_demographics[$key]['index'],
-          'alternatives' => $all_demographics[$key]['alternatives'],
+          'alternatives' => $alternatives,
           'required' => boolval($demographic['required']),
         ];
       }
@@ -369,6 +374,53 @@ class Apsis {
       }
     }
     return $demographics;
+  }
+
+  /**
+   * Formats form element based on options.
+   *
+   * @param array $alternatives
+   *   Defined values from api.
+   * @param string $key
+   *   Demographic key.
+   * @param bool $required
+   *   Form element required.
+   *
+   * @return array
+   *   A drupal form element.
+   */
+  public function demographicFormElement(array $alternatives, $key, $required) {
+    $element = [];
+    switch (count($alternatives)) {
+      case 0:
+        // If there's no alternatives in APSIS, render as a textfield.
+        $element = [
+          '#title' => $key,
+          '#type' => 'textfield',
+          '#required' => $required,
+        ];
+        break;
+
+      case 1:
+        // If there's only one alternative, render as a checkbox.
+        $element = [
+          '#title' => reset($alternatives),
+          '#type' => 'checkbox',
+          '#return_value' => reset($alternatives),
+        ];
+        break;
+
+      default:
+        // If there's more than one alternative, render as a select.
+        $element = [
+          '#title' => $key,
+          '#type' => 'select',
+          '#options' => $alternatives,
+          '#required' => $required,
+        ];
+        break;
+    }
+    return $element;
   }
 
 }

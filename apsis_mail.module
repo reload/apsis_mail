@@ -66,46 +66,19 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
     ];
 
     // Render demographic data.
-    $demographics = $apsis->getAllowedDemographicData();
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
 
     $form['apsis_demographic_data'] = [
       '#type' => 'fieldset',
       '#title' => t('Demographic data'),
+      '#tree' => TRUE,
     ];
 
-    foreach ($demographics as $key => $demographic) {
+    foreach ($allowedDemographicData as $key => $demographic) {
       $alternatives = $demographic['alternatives'];
       $required = $demographic['required'];
 
-      switch (count($alternatives)) {
-        case 0:
-          // If there's no alternatives in APSIS, render as a textfield.
-          $form['apsis_demographic_data']['textfield'][$key] = [
-            '#title' => $key,
-            '#type' => 'textfield',
-            '#required' => $required,
-          ];
-          break;
-
-        case 1:
-          // If there's only one alternative, render as a checkbox.
-          $form['apsis_demographic_data']['checkbox'][$key] = [
-            '#title' => $alternatives[0],
-            '#type' => 'checkbox',
-            '#options' => $alternatives[0],
-          ];
-          break;
-
-        default:
-          // If there's more than one alternative, render as a select.
-          $form['apsis_demographic_data']['select'][$key] = [
-            '#title' => $key,
-            '#type' => 'select',
-            '#options' => $alternatives,
-            '#required' => $required,
-          ];
-          break;
-      }
+      $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
     }
 
     // Add submit handler.
@@ -149,9 +122,18 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
   // Lists to remove subscription.
   $lists_subtract = array_diff($lists_subscribed_allowed, $lists_send);
 
+  // Format demographic data.
+  $demographics = [];
+  foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+    $demographics[] = [
+      'Key' => $key,
+      'Value' => $value,
+    ];
+  }
+
   // Subscribe to newsletters.
   foreach ($lists_add as $list_id) {
-    $apsis->addSubscriber($list_id, $email, $name);
+    $apsis->addSubscriber($list_id, $email, $name, $demographics);
   }
 
   // Unsubscribe to newsletters.

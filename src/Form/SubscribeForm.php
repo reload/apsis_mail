@@ -75,8 +75,9 @@ class SubscribeForm extends FormBase {
     $allowedDemographicData = $apsis->getAllowedDemographicData();
 
     if (count($allowedDemographicData > 0)) {
-      $form['demographic_data'] = [
+      $form['apsis_demographic_data'] = [
         '#type' => 'container',
+        '#tree' => TRUE,
       ];
     }
 
@@ -86,30 +87,7 @@ class SubscribeForm extends FormBase {
         $alternatives = $demographic['alternatives'];
         $required = $demographic['required'];
 
-        if ($alternatives) {
-          if (count($alternatives) == 1) {
-            $form['demographic_data']['demographic_data_' . $demographic['index']] = [
-              '#type' => 'checkbox',
-              '#title' => $alternatives[0],
-              '#required' => $required,
-            ];
-          }
-          if (count($alternatives) > 1) {
-            $form['demographic_data']['demographic_data_' . $demographic['index']] = [
-              '#type' => 'select',
-              '#title' => $key,
-              '#options' => $alternatives,
-              '#required' => $required,
-            ];
-          }
-        }
-        else {
-          $form['demographic_data']['demographic_data_' . $demographic['index']] = [
-            '#type' => 'textfield',
-            '#title' => $key,
-            '#required' => $required,
-          ];
-        }
+        $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
       }
     }
 
@@ -173,24 +151,10 @@ class SubscribeForm extends FormBase {
     $name = $form_state->getValue('name');
     $email = $form_state->getValue('email');
 
-    // Get demographic data.
-    foreach ($allowedDemographicData as $key => $demographic) {
-      $alternatives = $demographic['alternatives'];
-      $chosen = $form_state->getValue('demographic_data_' . $demographic['index']);
-
-      if (count($alternatives) == 1) {
-        $value = ($chosen == 1) ? $alternatives[0] : NULL;
-      }
-
-      elseif (count($alternatives) == 0) {
-        $value = $chosen;
-      }
-
-      else {
-        $value = $alternatives[$chosen];
-      }
-
-      $demographic_data[] = [
+    // Format demographic data.
+    $demographics = [];
+    foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+      $demographics[] = [
         'Key' => $key,
         'Value' => $value,
       ];
@@ -198,7 +162,7 @@ class SubscribeForm extends FormBase {
 
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
-      $submit = $apsis->addSubscriber($list, $email, $name, $demographic_data);
+      $submit = $apsis->addSubscriber($list, $email, $name, $demographics);
       drupal_set_message($this->t('Submitted!'));
     }
   }
