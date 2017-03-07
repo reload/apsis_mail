@@ -289,7 +289,7 @@ class Apsis {
   public function addSubscriber($list_id, $email, $name, array $demographic_data = []) {
     // Request options.
     $method = 'post';
-    $path = '/v1/subscribers/mailinglist/' . $list_id . '/create';
+    $path = '/v1/subscribers/mailinglist/' . $list_id . '/create?updateIfExists=true';
     $args = [
       'json' => [
         'Email' => $email,
