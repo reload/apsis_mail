@@ -69,11 +69,25 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
       '#tree' => TRUE,
     ];
 
+    // Get Demograpic data states.
+    $user_info = $apsis->getSubscriberInfoByEmail($email);
+    $demographic_states = [];
+    if ($user_info) {
+      foreach ($user_info->DemDataFields as $demdata) {
+        $demographic_states[$demdata->Key] = $demdata->Value;
+      }
+    }
+
     foreach ($allowedDemographicData as $key => $demographic) {
       $alternatives = $demographic['alternatives'];
       $required = $demographic['required'];
 
       $form['apsis']['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+      // Set default value if exists.
+      if (!empty($demographic_states[$key])) {
+        $form['apsis']['apsis_demographic_data'][$key]['#default_value'] = $demographic_states[$key];
+      }
+
     }
 
     // Add mailing lists element to form.
