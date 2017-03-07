@@ -69,20 +69,20 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
       $url = Url::fromRoute('apsis_mail.admin');
       $link = \Drupal::l($this->t('admin page'), $url);
       // Set no lists message.
-      $message = t('No allowed mailing lists are set, go to the @link to configure.', ['@link' => $link]);
+      $message = $this->t('No allowed mailing lists are set, go to the @link to configure.', ['@link' => $link]);
       drupal_set_message($message, 'error');
     }
 
     else {
       if (!empty($mailing_lists)) {
         // Add 'exposed' option.
-        $exposed = ['exposed' => t('Let user choose')];
+        $exposed = ['exposed' => $this->t('Let user choose')];
         $mailing_lists = $exposed + $mailing_lists;
 
         $form['mailing_list'] = [
           '#type' => 'select',
           '#title' => $this->t('Mailing list'),
-          '#description' => t('Mailing list to use'),
+          '#description' => $this->t('Mailing list to use'),
           '#options' => $mailing_lists,
           '#default_value' => !empty($config['mailing_list']) ? $config['mailing_list'] : 'exposed' ,
           '#required' => TRUE,
@@ -90,16 +90,11 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
       }
 
       if (!empty($demographic_data)) {
-        // Add 'exposed' option.
-        $exposed = ['exposed' => t('Let user choose')];
-        $demographic_data = $exposed + $demographic_data;
         $form['demographic_data'] = [
-          '#type' => 'select',
-          '#title' => $this->t('Demographic data'),
-          '#description' => t('Demographic data to use'),
-          '#options' => $demographic_data,
-          '#default_value' => !empty($config['demographic_data']) ? $config['demographic_data'] : 'exposed' ,
-          '#required' => TRUE,
+          '#type' => 'checkbox',
+          '#title' => $this->t('Show demographic data'),
+          '#description' => $this->t('Expose demographic data fields to user.'),
+          '#default_value' => !empty($config['demographic_data']) ? $config['demographic_data'] : '' ,
         ];
       }
     }

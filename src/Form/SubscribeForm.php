@@ -34,18 +34,18 @@ class SubscribeForm extends FormBase {
 
     $form['name'] = array(
       '#type' => 'textfield',
-      '#title' => t('Name'),
+      '#title' => $this->t('Name'),
       '#attributes' => [
-        'placeholder' => t('Name'),
+        'placeholder' => $this->t('Name'),
       ],
       '#required' => TRUE,
     );
 
     $form['email'] = array(
       '#type' => 'email',
-      '#title' => t('Email address'),
+      '#title' => $this->t('Email address'),
       '#attributes' => [
-        'placeholder' => t('Email'),
+        'placeholder' => $this->t('Email'),
       ],
       '#required' => TRUE,
     );
@@ -74,56 +74,35 @@ class SubscribeForm extends FormBase {
     $allowedMailingLists = $apsis->getAllowedMailingLists();
     $allowedDemographicData = $apsis->getAllowedDemographicData();
 
+    if (count($allowedDemographicData > 0)) {
+      $form['apsis_demographic_data'] = [
+        '#type' => 'container',
+        '#tree' => TRUE,
+      ];
+    }
+
+    // Demographics.
+    if ($build_info['args'] && $build_info['args'][1]) {
+      foreach ($allowedDemographicData as $key => $demographic) {
+        $alternatives = $demographic['alternatives'];
+        $required = $demographic['required'];
+
+        $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+      }
+    }
+
     if (
       (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
       (!empty($build_info['args'][0]) && $build_info['args'][0] === 'exposed')
     ) {
       $form['exposed_lists'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Mailing lists'),
-        '#description' => t('Mailing lists to subscribe to.'),
+        '#title' => $this->t('Mailing lists'),
+        '#description' => $this->t('Mailing lists to subscribe to.'),
         '#options' => $allowedMailingLists,
         '#default_value' => [],
         '#required' => TRUE,
       ];
-    }
-
-    if (count($allowedDemographicData > 0)) {
-      $form['demographic_data'] = [
-        '#type' => 'container',
-      ];
-
-      foreach ($allowedDemographicData as $demographic) {
-        $alternatives = $demographic['alternatives'];
-        $required = $demographic['required'];
-        $title = $demographic['key'];
-
-        if ($alternatives) {
-          if (count($alternatives) == 1) {
-            $title = $alternatives[0];
-            $form['demographic_data']['demographic_data_' . $demographic['index']] = [
-              '#type' => 'checkbox',
-              '#title' => $title,
-              '#required' => $required,
-            ];
-          }
-          if (count($alternatives) > 1) {
-            $form['demographic_data']['demographic_data_' . $demographic['index']] = [
-              '#type' => 'select',
-              '#title' => $title,
-              '#options' => $alternatives,
-              '#required' => $required,
-            ];
-          }
-        }
-        else {
-          $form['demographic_data']['demographic_data_' . $demographic['index']] = [
-            '#type' => 'textfield',
-            '#title' => $title,
-            '#required' => $required,
-          ];
-        }
-      }
     }
 
     // If there is only one mailinglist selected, and no explict exposed setting
@@ -172,33 +151,19 @@ class SubscribeForm extends FormBase {
     $name = $form_state->getValue('name');
     $email = $form_state->getValue('email');
 
-    // Get demographic data.
-    foreach ($allowedDemographicData as $demographic) {
-      $alternatives = $demographic['alternatives'];
-      $chosen = $form_state->getValue('demographic_data_' . $demographic['index']);
-
-      if (count($alternatives) == 1) {
-        $value = ($chosen == 1) ? $alternatives[0] : NULL;
-      }
-
-      elseif (count($alternatives) == 0) {
-        $value = $chosen;
-      }
-
-      else {
-        $value = $alternatives[$chosen];
-      }
-
-      $demographic_data[] = [
-        'Key' => $demographic['key'],
+    // Format demographic data.
+    $demographics = [];
+    foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+      $demographics[] = [
+        'Key' => $key,
         'Value' => $value,
       ];
     }
 
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
-      $submit = $apsis->addSubscriber($list, $email, $name, $demographic_data);
-      drupal_set_message(t($submit->Message));
+      $submit = $apsis->addSubscriber($list, $email, $name, $demographics);
+      drupal_set_message($this->t('Submitted!'));
     }
   }
 

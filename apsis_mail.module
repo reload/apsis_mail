@@ -54,59 +54,36 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
       }
     }
 
+    $form['apsis'] = [
+      '#type' => 'container',
+      // Since these are faux fields, we put them last.
+      '#weight' => 49,
+    ];
+
+    // Render demographic data.
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
+
+    $form['apsis']['apsis_demographic_data'] = [
+      '#type' => 'fieldset',
+      '#title' => t('Demographic data'),
+      '#tree' => TRUE,
+    ];
+
+    foreach ($allowedDemographicData as $key => $demographic) {
+      $alternatives = $demographic['alternatives'];
+      $required = $demographic['required'];
+
+      $form['apsis']['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+    }
+
     // Add mailing lists element to form.
-    $form['apsis_newsletter_signup'] = [
+    $form['apsis']['apsis_newsletter_signup'] = [
       '#type' => 'checkboxes',
       '#title' => t('Newsletters'),
       '#description' => t('Subscribe to newsletter.'),
       '#default_value' => $lists_subscribed,
       '#options' => $mailing_lists,
-      // Since this is a faux field, we put it last.
-      '#weight' => 50,
     ];
-
-    // Render demographic data.
-    $demographics = $apsis->getAllowedDemographicData();
-
-    $form['apsis_demographic_data'] = [
-      '#type' => 'fieldset',
-      '#title' => t('Demographic data'),
-    ];
-
-    foreach ($demographics as $demographic) {
-      $alternatives = $demographic['alternatives'];
-      $required = $demographic['required'];
-
-      switch (count($alternatives)) {
-        case 0:
-          // If there's no alternatives in APSIS, render as a textfield.
-          $form['apsis_demographic_data']['textfield'][$demographic['key']] = [
-            '#title' => $demographic['key'],
-            '#type' => 'textfield',
-            '#required' => $required,
-          ];
-          break;
-
-        case 1:
-          // If there's only one alternative, render as a checkbox.
-          $form['apsis_demographic_data']['checkbox'][$demographic['key']] = [
-            '#title' => $alternatives[0],
-            '#type' => 'checkbox',
-            '#options' => $alternatives[0],
-          ];
-          break;
-
-        default:
-          // If there's more than one alternative, render as a select.
-          $form['apsis_demographic_data']['select'][$demographic['key']] = [
-            '#title' => $demographic['key'],
-            '#type' => 'select',
-            '#options' => $alternatives,
-            '#required' => $required,
-          ];
-          break;
-      }
-    }
 
     // Add submit handler.
     $form['actions']['submit']['#submit'][] = '_apsis_mail_submit';
@@ -149,9 +126,18 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
   // Lists to remove subscription.
   $lists_subtract = array_diff($lists_subscribed_allowed, $lists_send);
 
+  // Format demographic data.
+  $demographics = [];
+  foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+    $demographics[] = [
+      'Key' => $key,
+      'Value' => $value,
+    ];
+  }
+
   // Subscribe to newsletters.
   foreach ($lists_add as $list_id) {
-    $apsis->addSubscriber($list_id, $email, $name);
+    $apsis->addSubscriber($list_id, $email, $name, $demographics);
   }
 
   // Unsubscribe to newsletters.
