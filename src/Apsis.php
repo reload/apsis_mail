@@ -12,7 +12,7 @@ class Apsis {
   /**
    * Configuration object.
    *
-   * @var class $config
+   * @var class
    */
   public $config;
 
@@ -33,10 +33,10 @@ class Apsis {
    * @param array $args
    *   Request header arguments.
    */
-  protected function request($method, $path, $args = []) {
+  protected function request($method, $path, array $args = []) {
     // Set options variables.
     $protocol = !empty($this->config->get('api_ssl')) ? 'https://' : 'http://';
-    $key = !empty(\Drupal::state()->get('apsis_mail_api_key')) ? \Drupal::state()->get('apsis_mail_api_key') . ':@' : '';
+    $key = !empty(\Drupal::state()->get('apsis_mail.api_key')) ? \Drupal::state()->get('apsis_mail.api_key') . ':@' : '';
     $url = !empty($this->config->get('api_url')) ? $this->config->get('api_url') : '';
     $port = !empty($this->config->get('api_port')) && $this->config->get('api_ssl') ? ':' . $this->config->get('api_port') : '';
     $args['headers']['Authorization'] = 'Basic ' . base64_encode($key);
@@ -87,7 +87,7 @@ class Apsis {
    * @return mixed
    *   The response from Apsis.
    */
-  protected function cachableRequest($method, $path, $args = []) {
+  protected function cachableRequest($method, $path, array $args = []) {
     $cid = 'apsis_mail:api:' . hash('sha256', var_export(func_get_args(), TRUE));
 
     // First check static cache, to avoid unnecessary queries to cache backend.
@@ -118,25 +118,25 @@ class Apsis {
   /**
    * Get single mailing list.
    *
-   * @return array $list.
+   * @return array
    *   Array containing allowed mailing lists.
    */
   public function getAllowedMailingLists() {
     // Get all lists.
     $mailing_lists = $this->getMailingLists();
     // Get allowed list settings.
-    $allowed_lists = \Drupal::state()->get('apsis_mail_mailing_lists');
+    $allowed_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
 
     // Return list with allowed list items.
     if (!empty($allowed_lists)) {
-      return array_intersect_key($mailing_lists, array_flip($allowed_lists));;
+      return array_intersect_key($mailing_lists, array_flip($allowed_lists));
     }
   }
 
   /**
    * Fetch mailing lists.
    *
-   * @return array $list
+   * @return array
    *   Array containing all mailing lists.
    */
   public function getMailingLists() {
@@ -283,15 +283,18 @@ class Apsis {
    *   Email address.
    * @param string $name
    *   Username.
+   * @param array $demographic_data
+   *   Demographic data.
    */
-  public function addSubscriber($list_id, $email, $name) {
+  public function addSubscriber($list_id, $email, $name, array $demographic_data = []) {
     // Request options.
     $method = 'post';
-    $path = '/v1/subscribers/mailinglist/' . $list_id . '/create';
+    $path = '/v1/subscribers/mailinglist/' . $list_id . '/create?updateIfExists=true';
     $args = [
       'json' => [
         'Email' => $email,
         'Name' => $name,
+        'DemDataFields' => $demographic_data,
       ],
     ];
 
@@ -310,6 +313,134 @@ class Apsis {
     );
 
     return $contents;
+  }
+
+  /**
+   * Get subscriber data.
+   *
+   * @param string $email
+   *   An email address.
+   */
+  public function getSubscriberInfoByEmail($email) {
+    // Get subscriber id.
+    $id = $this->getSubscriberIdByEmail($email);
+
+    // Request options.
+    $method = 'get';
+    $path = '/v1/subscribers/id/' . $id;
+
+    // Do request.
+    $contents = $this->request($method, $path);
+
+    return $contents ? $contents->Result : NULL;
+  }
+
+  /**
+   * Get a list of allowed demographic data.
+   *
+   * @return array
+   *   Allowed demographic data.
+   */
+  public function getAllowedDemographicData() {
+    // Get all lists.
+    $all_demographics = $this->getDemographicData();
+    // Get config.
+    $allowed_demographics = \Drupal::state()->get('apsis_mail.demographic_data');
+
+    // Get allowed list settings.
+    $allowed_demographic_data = [];
+    foreach ($allowed_demographics as $key => $demographic) {
+      if ($demographic['available']) {
+        // Set value as key for alternatives.
+        $alternatives = [];
+        foreach ($all_demographics[$key]['alternatives'] as $alternative) {
+          $alternatives[$alternative] = $alternative;
+        }
+        $allowed_demographic_data[$key] = [
+          'index' => $all_demographics[$key]['index'],
+          'alternatives' => $alternatives,
+          'required' => boolval($demographic['required']),
+        ];
+      }
+    }
+    return $allowed_demographic_data;
+  }
+
+  /**
+   * Returns demographic data fields.
+   *
+   * @return array
+   *   The demographics from the APSIS account.
+   */
+  public function getDemographicData() {
+    // Request options.
+    $method = 'get';
+    $path = '/accounts/v2/demographics';
+    $args = [
+      'headers' => [
+        'Content-length' => 0,
+      ],
+    ];
+    // Get request content.
+    $contents = $this->cachableRequest($method, $path, $args);
+    // Populate array for demographics.
+    $demographics = [];
+    if (!empty($contents)) {
+      foreach ($contents->Result->Demographics as $result) {
+        $demographics[$result->Key] = [
+          'index' => $result->Index,
+          'alternatives' => $result->Alternatives,
+        ];
+      }
+    }
+    return $demographics;
+  }
+
+  /**
+   * Formats form element based on options.
+   *
+   * @param array $alternatives
+   *   Defined values from api.
+   * @param string $key
+   *   Demographic key.
+   * @param bool $required
+   *   Form element required.
+   *
+   * @return array
+   *   A drupal form element.
+   */
+  public function demographicFormElement(array $alternatives, $key, $required) {
+    $element = [];
+    switch (count($alternatives)) {
+      case 0:
+        // If there's no alternatives in APSIS, render as a textfield.
+        $element = [
+          '#title' => $key,
+          '#type' => 'textfield',
+          '#required' => $required,
+        ];
+        break;
+
+      case 1:
+        // If there's only one alternative, render as a checkbox.
+        $element = [
+          '#title' => reset($alternatives),
+          '#type' => 'checkbox',
+          '#return_value' => reset($alternatives),
+        ];
+        break;
+
+      default:
+        // If there's more than one alternative, render as a select.
+        $element = [
+          '#title' => $key,
+          '#type' => 'select',
+          '#options' => $alternatives,
+          '#required' => $required,
+        ];
+        break;
+    }
+    return $element;
   }
 
 }

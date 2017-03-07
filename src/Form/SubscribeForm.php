@@ -34,18 +34,18 @@ class SubscribeForm extends FormBase {
 
     $form['name'] = array(
       '#type' => 'textfield',
-      '#title' => t('Name'),
+      '#title' => $this->t('Name'),
       '#attributes' => [
-        'placeholder' => t('Name'),
+        'placeholder' => $this->t('Name'),
       ],
       '#required' => TRUE,
     );
 
     $form['email'] = array(
       '#type' => 'email',
-      '#title' => t('Email address'),
+      '#title' => $this->t('Email address'),
       '#attributes' => [
-        'placeholder' => t('Email'),
+        'placeholder' => $this->t('Email'),
       ],
       '#required' => TRUE,
     );
@@ -72,6 +72,24 @@ class SubscribeForm extends FormBase {
     // exposed option.
     $build_info = $form_state->getBuildInfo();
     $allowedMailingLists = $apsis->getAllowedMailingLists();
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
+
+    if (count($allowedDemographicData > 0)) {
+      $form['apsis_demographic_data'] = [
+        '#type' => 'container',
+        '#tree' => TRUE,
+      ];
+    }
+
+    // Demographics.
+    if ($build_info['args'] && $build_info['args'][1]) {
+      foreach ($allowedDemographicData as $key => $demographic) {
+        $alternatives = $demographic['alternatives'];
+        $required = $demographic['required'];
+
+        $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+      }
+    }
 
     if (
       (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
@@ -79,8 +97,8 @@ class SubscribeForm extends FormBase {
     ) {
       $form['exposed_lists'] = [
         '#type' => 'checkboxes',
-        '#title' => t('Mailing lists'),
-        '#description' => t('Mailing lists to subscribe to.'),
+        '#title' => $this->t('Mailing lists'),
+        '#description' => $this->t('Mailing lists to subscribe to.'),
         '#options' => $allowedMailingLists,
         '#default_value' => [],
         '#required' => TRUE,
@@ -112,10 +130,13 @@ class SubscribeForm extends FormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $apsis = \Drupal::service('apsis');
+    $allowedDemographicData = $apsis->getAllowedDemographicData();
 
     // Get list id passed from build info.
     $build_info = $form_state->getBuildInfo();
-    $list_id = $build_info['args'][0];
+    if (!empty($build_info['args'])) {
+      $list_id = $build_info['args'][0];
+    }
 
     // Populate array with list id´s to subscribe.
     $subscribe_lists = [];
@@ -130,10 +151,20 @@ class SubscribeForm extends FormBase {
     $name = $form_state->getValue('name');
     $email = $form_state->getValue('email');
 
+    // Format demographic data.
+    $demographics = [];
+    foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+      $demographics[] = [
+        'Key' => $key,
+        'Value' => $value,
+      ];
+    }
+
     // Add subscriber(s).
     foreach ($subscribe_lists as $list) {
-      $submit = $apsis->addSubscriber($list, $email, $name);
-      drupal_set_message(t($submit->Message));
+      $submit = $apsis->addSubscriber($list, $email, $name, $demographics);
+      drupal_set_message($this->t('Submitted!'));
     }
   }
+
 }

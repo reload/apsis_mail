@@ -32,36 +32,48 @@ class ApsisMailSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     // Get config and states.
     $config = $this->config('apsis_mail.admin');
-    $api_key = \Drupal::state()->get('apsis_mail_api_key');
-    $mailing_lists = \Drupal::state()->get('apsis_mail_mailing_lists');
+    $api_key = \Drupal::state()->get('apsis_mail.api_key');
+    $mailing_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
+    $demographic_data = \Drupal::state()->get('apsis_mail.demographic_data');
 
     // Invoke Apsis service.
     $apsis = \Drupal::service('apsis');
 
-    $form['api_key'] = [
+    $form['api'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('API'),
+    ];
+
+    $form['api']['api_key'] = [
       '#type' => 'textfield',
-      '#title' => t('API key'),
-      '#description' => t('API key goes here.'),
+      '#title' => $this->t('Key'),
+      '#description' => $this->t('API key goes here.'),
       '#default_value' => $api_key,
     ];
 
-    $form['api_url'] = [
+    $form['api']['endpoint'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Endpoint'),
+      '#open' => FALSE,
+    ];
+
+    $form['api']['endpoint']['api_url'] = [
       '#type' => 'textfield',
-      '#title' => t('API endpoint'),
-      '#description' => t('URL to API method.'),
+      '#title' => $this->t('URL'),
+      '#description' => $this->t('URL to API method.'),
       '#default_value' => $config->get('api_url'),
     ];
 
-    $form['api_ssl'] = [
+    $form['api']['endpoint']['api_ssl'] = [
       '#type' => 'checkbox',
-      '#title' => t('Use SSL'),
-      '#description' => t('Use secure connection.'),
+      '#title' => $this->t('Use SSL'),
+      '#description' => $this->t('Use secure connection.'),
       '#default_value' => $config->get('api_ssl'),
     ];
 
-    $form['api_port'] = [
+    $form['api']['endpoint']['api_port'] = [
       '#type' => 'textfield',
-      '#title' => t('API endpoint SSL port'),
+      '#title' => t('SSL port'),
       '#description' => t('API endpoint SSL port number.'),
       '#default_value' => $config->get('api_port'),
       '#states' => [
@@ -81,24 +93,70 @@ class ApsisMailSettings extends ConfigFormBase {
     }
 
     $form['user_roles'] = [
-      '#type' => 'checkboxes',
-      '#title' => $this->t('User edit form subscription settings'),
+      '#type' => 'details',
+      '#title' => $this->t('Control subscriptions on user profile'),
       '#description' => $this->t(
-        'Enables users with corresponding role selected to subscribe
-        and usubscribe to mailing lists vi their user edit page.'
+        'Enables users with corresponding role(s) selected to subscribe
+        and unsubscribe to mailing lists via their user edit page.'
       ),
+    ];
+
+    $form['user_roles']['user_roles'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Roles'),
       '#options' => $roles,
       '#default_value' => $config->get('user_roles') ? $config->get('user_roles') : [],
     ];
 
     if ($apsis->getMailingLists()) {
       $form['mailing_lists'] = [
-        '#type' => 'checkboxes',
+        '#type' => 'details',
         '#title' => $this->t('Mailing lists'),
-        '#description' => t('Globally allowed mailing lists on site'),
+        '#description' => $this->t('Globally allowed mailing lists on site'),
+      ];
+
+      $form['mailing_lists']['mailing_lists'] = [
+        '#type' => 'checkboxes',
+        '#title' => $this->t('Allowed mailing lists'),
         '#options' => $apsis->getMailingLists(),
         '#default_value' => $mailing_lists ? $mailing_lists : [],
       ];
+    }
+
+    if ($apsis->getDemographicData()) {
+      $form['demographic_data'] = [
+        '#type' => 'details',
+        '#title' => $this->t('Demographic data'),
+        '#description' => $this->t('Globally allowed demographic data on site'),
+      ];
+
+      $form['demographic_data']['demographic_data'] = [
+        '#type' => 'table',
+        '#header' => [
+          $this->t('APSIS Parameter'),
+          $this->t('Available on block'),
+          $this->t('Required'),
+        ],
+      ];
+
+      foreach ($apsis->getDemographicData() as $key => $demographic) {
+        $alternatives = $demographic['alternatives'];
+
+        $form['demographic_data']['demographic_data'][$key]['key'] = [
+          '#plain_text' => $key,
+        ];
+
+        $form['demographic_data']['demographic_data'][$key]['available'] = [
+          '#type' => 'checkbox',
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['available'] : '',
+        ];
+
+        $form['demographic_data']['demographic_data'][$key]['required'] = [
+          '#type' => 'checkbox',
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['required'] : '',
+          '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
+        ];
+      }
     }
 
     return parent::buildForm($form, $form_state);
@@ -110,8 +168,9 @@ class ApsisMailSettings extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     // Save states.
     \Drupal::state()->setMultiple([
-      'apsis_mail_api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
-      'apsis_mail_mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
+      'apsis_mail.api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
+      'apsis_mail.mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
+      'apsis_mail.demographic_data' => $form_state->getValue('demographic_data') ? array_filter($form_state->getValue('demographic_data')) : [],
     ]);
 
     // Save settings.
