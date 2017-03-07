@@ -316,6 +316,26 @@ class Apsis {
   }
 
   /**
+   * Get subscriber data.
+   *
+   * @param string $email
+   *   An email address.
+   */
+  public function getSubscriberInfoByEmail($email) {
+    // Get subscriber id.
+    $id = $this->getSubscriberIdByEmail($email);
+
+    // Request options.
+    $method = 'get';
+    $path = '/v1/subscribers/id/' . $id;
+
+    // Do request.
+    $contents = $this->request($method, $path);
+
+    return $contents ? $contents->Result : NULL;
+  }
+
+  /**
    * Get a list of allowed demographic data.
    *
    * @return array
