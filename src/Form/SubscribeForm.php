@@ -82,7 +82,7 @@ class SubscribeForm extends FormBase {
     }
 
     // Demographics.
-    if ($build_info['args'] && $build_info['args'][1]) {
+    if (($build_info['args'] && $build_info['args'][1]) || \Drupal::state()->get('apsis_mail.demographic_data.always_show')) {
       foreach ($allowedDemographicData as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
         $required = $demographic['required'];

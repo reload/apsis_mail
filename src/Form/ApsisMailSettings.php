@@ -35,6 +35,7 @@ class ApsisMailSettings extends ConfigFormBase {
     $api_key = \Drupal::state()->get('apsis_mail.api_key');
     $mailing_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
     $demographic_data = \Drupal::state()->get('apsis_mail.demographic_data');
+    $always_show_demographic_data = \Drupal::state()->get('apsis_mail.demographic_data.always_show');
 
     // Invoke Apsis service.
     $apsis = \Drupal::service('apsis');
@@ -130,6 +131,13 @@ class ApsisMailSettings extends ConfigFormBase {
         '#description' => $this->t('Globally allowed demographic data on site'),
       ];
 
+      $form['demographic_data']['always_show'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Always show'),
+        '#description' => $this->t('This will enforce all blocks to show demographic data'),
+        '#default_value' => $always_show_demographic_data,
+      ];
+
       $form['demographic_data']['demographic_data'] = [
         '#type' => 'table',
         '#header' => [
@@ -171,6 +179,7 @@ class ApsisMailSettings extends ConfigFormBase {
       'apsis_mail.api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
       'apsis_mail.mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
       'apsis_mail.demographic_data' => $form_state->getValue('demographic_data') ? array_filter($form_state->getValue('demographic_data')) : [],
+      'apsis_mail.demographic_data.always_show' => $form_state->getValue('always_show'),
     ]);
 
     // Save settings.
