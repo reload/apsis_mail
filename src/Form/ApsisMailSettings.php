@@ -142,8 +142,11 @@ class ApsisMailSettings extends ConfigFormBase {
         '#type' => 'table',
         '#header' => [
           $this->t('APSIS Parameter'),
+          $this->t('Label on block'),
           $this->t('Available on block'),
           $this->t('Required'),
+          $this->t('Checkbox'),
+          $this->t('Value when checkbox is checked'),
         ],
       ];
 
@@ -154,6 +157,11 @@ class ApsisMailSettings extends ConfigFormBase {
           '#plain_text' => $key,
         ];
 
+        $form['demographic_data']['demographic_data'][$key]['label'] = [
+          '#type' => 'textfield',
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['label'] : '',
+        ];
+
         $form['demographic_data']['demographic_data'][$key]['available'] = [
           '#type' => 'checkbox',
           '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['available'] : '',
@@ -162,7 +170,19 @@ class ApsisMailSettings extends ConfigFormBase {
         $form['demographic_data']['demographic_data'][$key]['required'] = [
           '#type' => 'checkbox',
           '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['required'] : '',
-          '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
+          '#disabled' => (count($alternatives) > 2 || !$alternatives) ? FALSE : TRUE,
+        ];
+
+        $form['demographic_data']['demographic_data'][$key]['checkbox'] = [
+          '#type' => 'checkbox',
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['checkbox'] : '',
+          '#disabled' => (count($alternatives) == 2) ? FALSE : TRUE,
+        ];
+
+        $form['demographic_data']['demographic_data'][$key]['return_value'] = [
+          '#type' => (count($alternatives) == 2) ? 'select' : NULL,
+          '#options' => (count($alternatives) == 2) ? $alternatives : NULL,
+          '#default_value' => !empty($demographic_data[$key]['return_value']) ? $demographic_data[$key]['return_value'] : '',
         ];
       }
     }
