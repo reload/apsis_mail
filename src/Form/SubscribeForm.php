@@ -82,12 +82,16 @@ class SubscribeForm extends FormBase {
     }
 
     // Demographics.
-    if ($build_info['args'] && $build_info['args'][1]) {
+    if (($build_info['args'] && $build_info['args'][1]) || \Drupal::state()->get('apsis_mail.demographic_data.always_show')) {
       foreach ($allowedDemographicData as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
         $required = $demographic['required'];
+        $state = \Drupal::state()->get('apsis_mail.demographic_data');
+        $label = !empty($state[$key]['label']) ? $state[$key]['label'] : $key;
+        $checkbox = $state[$key]['checkbox'];
+        $return_value = !empty($state[$key]['return_value']) ? $state[$key]['return_value'] : NULL;
 
-        $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+        $form['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $label, $required, $checkbox, $return_value);
       }
     }
 
@@ -154,6 +158,19 @@ class SubscribeForm extends FormBase {
     // Format demographic data.
     $demographics = [];
     foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+      // If it's a checkbox, the value is an integer.
+      // The alternatives from Apsis can be anything.
+      if (is_integer($value)) {
+        $return_value = \Drupal::state()->get('apsis_mail.demographic_data')[$key]['return_value'];
+        $alternatives = $apsis->getDemographicData()[$key]['alternatives'];
+
+        if (!$value) {
+          unset($alternatives[$return_value]);
+          $value = reset($alternatives);
+        } else {
+          $value = $alternatives[$return_value];
+        }
+      }
       $demographics[] = [
         'Key' => $key,
         'Value' => $value,

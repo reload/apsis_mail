@@ -35,6 +35,7 @@ class ApsisMailSettings extends ConfigFormBase {
     $api_key = \Drupal::state()->get('apsis_mail.api_key');
     $mailing_lists = \Drupal::state()->get('apsis_mail.mailing_lists');
     $demographic_data = \Drupal::state()->get('apsis_mail.demographic_data');
+    $always_show_demographic_data = \Drupal::state()->get('apsis_mail.demographic_data.always_show');
 
     // Invoke Apsis service.
     $apsis = \Drupal::service('apsis');
@@ -130,12 +131,22 @@ class ApsisMailSettings extends ConfigFormBase {
         '#description' => $this->t('Globally allowed demographic data on site'),
       ];
 
+      $form['demographic_data']['always_show'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Always show'),
+        '#description' => $this->t('This will enforce all blocks to show demographic data'),
+        '#default_value' => $always_show_demographic_data,
+      ];
+
       $form['demographic_data']['demographic_data'] = [
         '#type' => 'table',
         '#header' => [
           $this->t('APSIS Parameter'),
+          $this->t('Label on block'),
           $this->t('Available on block'),
           $this->t('Required'),
+          $this->t('Checkbox'),
+          $this->t('Value when checkbox is checked'),
         ],
       ];
 
@@ -146,6 +157,11 @@ class ApsisMailSettings extends ConfigFormBase {
           '#plain_text' => $key,
         ];
 
+        $form['demographic_data']['demographic_data'][$key]['label'] = [
+          '#type' => 'textfield',
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['label'] : '',
+        ];
+
         $form['demographic_data']['demographic_data'][$key]['available'] = [
           '#type' => 'checkbox',
           '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['available'] : '',
@@ -154,7 +170,19 @@ class ApsisMailSettings extends ConfigFormBase {
         $form['demographic_data']['demographic_data'][$key]['required'] = [
           '#type' => 'checkbox',
           '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['required'] : '',
-          '#disabled' => (count($alternatives) > 1 || !$alternatives) ? FALSE : TRUE,
+          '#disabled' => (count($alternatives) > 2 || !$alternatives) ? FALSE : TRUE,
+        ];
+
+        $form['demographic_data']['demographic_data'][$key]['checkbox'] = [
+          '#type' => 'checkbox',
+          '#default_value' => !empty($demographic_data[$key]) ? $demographic_data[$key]['checkbox'] : '',
+          '#disabled' => (count($alternatives) == 2) ? FALSE : TRUE,
+        ];
+
+        $form['demographic_data']['demographic_data'][$key]['return_value'] = [
+          '#type' => (count($alternatives) == 2) ? 'select' : NULL,
+          '#options' => (count($alternatives) == 2) ? $alternatives : NULL,
+          '#default_value' => !empty($demographic_data[$key]['return_value']) ? $demographic_data[$key]['return_value'] : '',
         ];
       }
     }
@@ -171,6 +199,7 @@ class ApsisMailSettings extends ConfigFormBase {
       'apsis_mail.api_key' => $form_state->getValue('api_key') ? $form_state->getValue('api_key') : '',
       'apsis_mail.mailing_lists' => $form_state->getValue('mailing_lists') ? array_filter($form_state->getValue('mailing_lists')) : [],
       'apsis_mail.demographic_data' => $form_state->getValue('demographic_data') ? array_filter($form_state->getValue('demographic_data')) : [],
+      'apsis_mail.demographic_data.always_show' => $form_state->getValue('always_show'),
     ]);
 
     // Save settings.
