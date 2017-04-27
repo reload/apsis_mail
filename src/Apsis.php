@@ -387,9 +387,13 @@ class Apsis {
     $demographics = [];
     if (!empty($contents)) {
       foreach ($contents->Result->Demographics as $result) {
+        $alternatives = [];
+        foreach ($result->Alternatives as $alternative) {
+          $alternatives[$alternative] = $alternative;
+        }
         $demographics[$result->Key] = [
           'index' => $result->Index,
-          'alternatives' => $result->Alternatives,
+          'alternatives' => $alternatives,
         ];
       }
     }
@@ -409,37 +413,29 @@ class Apsis {
    * @return array
    *   A drupal form element.
    */
-  public function demographicFormElement(array $alternatives, $key, $required) {
+  public function demographicFormElement(array $alternatives, $label, $required, $checkbox = FALSE, $return_value = FALSE) {
     $element = [];
-    switch (count($alternatives)) {
-      case 0:
-        // If there's no alternatives in APSIS, render as a textfield.
-        $element = [
-          '#title' => $key,
-          '#type' => 'textfield',
-          '#required' => $required,
-        ];
-        break;
 
-      case 1:
-        // If there's only one alternative, render as a checkbox.
-        $element = [
-          '#title' => reset($alternatives),
-          '#type' => 'checkbox',
-          '#return_value' => reset($alternatives),
-        ];
-        break;
-
-      default:
-        // If there's more than one alternative, render as a select.
-        $element = [
-          '#title' => $key,
-          '#type' => 'select',
-          '#options' => $alternatives,
-          '#required' => $required,
-        ];
-        break;
+    if (empty($alternatives)) {
+      // If there's no alternatives in Apsis, render as a textfield.
+      $element = [
+        '#title' => $label,
+        '#type' => 'textfield',
+        '#required' => $required,
+      ];
     }
+    else {
+      // If there's more multiple alternatives, render as a select or checkbox.
+      $element = [
+        '#title' => $label,
+        '#type' => ($checkbox) ? 'checkbox' : 'select',
+        '#options' => $alternatives,
+        '#required' => $required,
+        '#return_value' => ($checkbox) ?  $return_value : '',
+        '#validated' => TRUE,
+      ];
+    }
+
     return $element;
   }
 

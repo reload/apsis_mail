@@ -81,8 +81,12 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
     foreach ($allowedDemographicData as $key => $demographic) {
       $alternatives = $demographic['alternatives'];
       $required = $demographic['required'];
+      $state = \Drupal::state()->get('apsis_mail.demographic_data');
+      $label = !empty($state[$key]['label']) ? $state[$key]['label'] : $key;
+      $checkbox = $state[$key]['checkbox'];
+      $return_value = !empty($state[$key]['return_value']) ? $state[$key]['return_value'] : NULL;
 
-      $form['apsis']['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $key, $required);
+      $form['apsis']['apsis_demographic_data'][$key] = $apsis->demographicFormElement($alternatives, $label, $required, $checkbox, $return_value);
       // Set default value if exists.
       if (!empty($demographic_states[$key])) {
         $form['apsis']['apsis_demographic_data'][$key]['#default_value'] = $demographic_states[$key];
@@ -116,9 +120,6 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
   $email = $user->getEmail();
   $name = $user->getUsername();
 
-  // Lists to add subscription to.
-  $lists_send = array_keys(array_filter($form_state->getValue('apsis_newsletter_signup')));
-
   $subscriber_id = $apsis->getSubscriberIdByEmail($email);
 
   // Get subscribed lists directly from apsis to use as default value.
@@ -130,32 +131,31 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
     }
   }
 
-  // Match lists with allowed ones.
-  $allowed_lists = array_keys($apsis->getAllowedMailingLists());
-  $lists_subscribed_allowed = array_intersect($allowed_lists, $lists_subscribed);
-
-  // Lists to add subscription.
-  $lists_add = array_diff($lists_send, $lists_subscribed_allowed);
-
-  // Lists to remove subscription.
-  $lists_subtract = array_diff($lists_subscribed_allowed, $lists_send);
-
   // Format demographic data.
   $demographics = [];
   foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
+    // If it's a checkbox, the value is an integer.
+    // The alternatives from Apsis can be anything.
+    if (is_integer($value)) {
+      $return_value = \Drupal::state()->get('apsis_mail.demographic_data')[$key]['return_value'];
+      $alternatives = $apsis->getDemographicData()[$key]['alternatives'];
+
+      if (!$value) {
+        unset($alternatives[$return_value]);
+        $value = reset($alternatives);
+      } else {
+        $value = $alternatives[$return_value];
+      }
+    }
     $demographics[] = [
       'Key' => $key,
       'Value' => $value,
     ];
   }
 
-  // Subscribe to newsletters.
-  foreach ($lists_add as $list_id) {
-    $apsis->addSubscriber($list_id, $email, $name, $demographics);
-  }
-
-  // Unsubscribe to newsletters.
-  foreach ($lists_subtract as $list_id) {
-    $apsis->deleteSubscriber($list_id, $email);
+  // Subscribe or unsubscribe to newsletters.
+  $values = $form_state->getValues();
+  foreach ($values['apsis_newsletter_signup'] as $list_id => $value) {
+    ($list_id == $value) ? $apsis->addSubscriber($list_id, $email, $name, $demographics) : $apsis->deleteSubscriber($list_id, $email);
   }
 }
