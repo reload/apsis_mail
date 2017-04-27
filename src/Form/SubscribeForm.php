@@ -95,6 +95,7 @@ class SubscribeForm extends FormBase {
       }
     }
 
+    // Hide mailing lists if there's more than one.
     if (
       (empty($build_info['args']) && count($allowedMailingLists) > 1) ||
       (!empty($build_info['args'][0]) && $build_info['args'][0] === 'exposed')
@@ -105,6 +106,15 @@ class SubscribeForm extends FormBase {
         '#description' => $this->t('Mailing lists to subscribe to.'),
         '#options' => $allowedMailingLists,
         '#default_value' => [],
+        '#required' => TRUE,
+      ];
+    }
+    // If there's only one allowed mailing list, make it checked and hidden.
+    else {
+      $form['exposed_lists'] = [
+        '#type' => 'hidden',
+        '#options' => $allowedMailingLists,
+        '#default_value' => array_keys($allowedMailingLists),
         '#required' => TRUE,
       ];
     }
@@ -144,10 +154,10 @@ class SubscribeForm extends FormBase {
 
     // Populate array with list id´s to subscribe.
     $subscribe_lists = [];
-    if (!empty($form_state->getValue('exposed_lists'))) {
+    if (!empty($form_state->getValue('exposed_lists')) && count($form_state->getValue('exposed_lists')) > 1) {
       $subscribe_lists = array_filter($form_state->getValue('exposed_lists'));
     }
-    elseif ($list_id != 'exposed') {
+    else {
       $subscribe_lists = [$list_id];
     }
 
