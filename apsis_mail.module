@@ -131,9 +131,6 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
     }
   }
 
-  // Match lists with allowed ones.
-  $allowed_lists = array_keys($apsis->getAllowedMailingLists());
-
   // Format demographic data.
   $demographics = [];
   foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
@@ -156,8 +153,9 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
     ];
   }
 
-  // Subscribe to newsletters.
-  foreach ($allowed_lists as $list_id) {
-    $apsis->addSubscriber($list_id, $email, $name, $demographics);
+  // Subscribe or unsubscribe to newsletters.
+  $values = $form_state->getValues();
+  foreach ($values['apsis_newsletter_signup'] as $list_id => $value) {
+    ($list_id == $value) ? $apsis->addSubscriber($list_id, $email, $name, $demographics) : $apsis->deleteSubscriber($list_id, $email);
   }
 }
