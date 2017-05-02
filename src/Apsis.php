@@ -28,6 +28,8 @@ class Apsis {
   /**
    * Build url for the REST call.
    *
+   * @param string $method
+   *   POST or GET.
    * @param string $path
    *   Request path.
    * @param array $args
@@ -405,10 +407,14 @@ class Apsis {
    *
    * @param array $alternatives
    *   Defined values from api.
-   * @param string $key
-   *   Demographic key.
+   * @param string $label
+   *   Demographic label.
    * @param bool $required
    *   Form element required.
+   * @param bool $checkbox
+   *   If it is a checkbox or not.
+   * @param bool $return_value
+   *   If it has a return value.
    *
    * @return array
    *   A drupal form element.
@@ -431,7 +437,7 @@ class Apsis {
         '#type' => ($checkbox) ? 'checkbox' : 'select',
         '#options' => $alternatives,
         '#required' => $required,
-        '#return_value' => ($checkbox) ?  $return_value : '',
+        '#return_value' => ($checkbox) ? $return_value : '',
         '#validated' => TRUE,
       ];
     }

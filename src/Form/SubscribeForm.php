@@ -32,23 +32,23 @@ class SubscribeForm extends FormBase {
       ],
     ];
 
-    $form['name'] = array(
+    $form['name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Name'),
       '#attributes' => [
         'placeholder' => $this->t('Name'),
       ],
       '#required' => TRUE,
-    );
+    ];
 
-    $form['email'] = array(
+    $form['email'] = [
       '#type' => 'email',
       '#title' => $this->t('Email address'),
       '#attributes' => [
         'placeholder' => $this->t('Email'),
       ],
       '#required' => TRUE,
-    );
+    ];
 
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
@@ -56,14 +56,14 @@ class SubscribeForm extends FormBase {
       '#value' => $this->t('Subscribe'),
       '#button_type' => 'primary',
       '#ajax' => [
-        'callback' => array(get_class($this), 'ajaxCallback'),
+        'callback' => [get_class($this), 'ajaxCallback'],
         'wrapper' => $ajax_container,
         'effect' => 'fade',
         'method' => 'replace',
-        'progress' => array(
+        'progress' => [
           'type' => 'throbber',
           'message' => $this->t('Submitting'),
-        ),
+        ],
       ],
     ];
 
@@ -170,14 +170,15 @@ class SubscribeForm extends FormBase {
     foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
       // If it's a checkbox, the value is an integer.
       // The alternatives from Apsis can be anything.
-      if (is_integer($value)) {
+      if (is_int($value)) {
         $return_value = \Drupal::state()->get('apsis_mail.demographic_data')[$key]['return_value'];
         $alternatives = $apsis->getDemographicData()[$key]['alternatives'];
 
         if (!$value) {
           unset($alternatives[$return_value]);
           $value = reset($alternatives);
-        } else {
+        }
+        else {
           $value = $alternatives[$return_value];
         }
       }
