@@ -2,13 +2,55 @@
 
 namespace Drupal\apsis_mail\Form;
 
+use Drupal\apsis_mail\Apsis;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Queue\QueueInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Newsletter subscription form.
  */
 class SubscribeForm extends FormBase {
+
+  /**
+   * The Apsis client object which is used to communicate with the system.
+   *
+   * @var \Drupal\apsis_mail\Apsis
+   */
+  protected $apsis;
+
+  /**
+   * The queue for which to store and process newly created subscriptions.
+   *
+   * Apsis can be slow to respond. We store
+   *
+   * @var \Drupal\Core\Queue\QueueInterface
+   */
+  protected $subscriptionQueue;
+
+  /**
+   * SubscribeForm constructor.
+   *
+   * @param Apsis $apsis
+   *   The Apsis client object which is used to communicate with the system.
+   * @param QueueInterface $queue
+   *   The queue for which to store and process newly created subscriptions.
+   */
+  public function __construct(Apsis $apsis, QueueInterface $queue) {
+    $this->apsis = $apsis;
+    $this->subscriptionQueue = $queue;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('apsis.prequeue'),
+      $container->get('apsis.queue.add_subscriber')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -143,9 +185,6 @@ class SubscribeForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $apsis = \Drupal::service('apsis');
-    $allowedDemographicData = $apsis->getAllowedDemographicData();
-
     // Get list id passed from build info.
     $build_info = $form_state->getBuildInfo();
     if (!empty($build_info['args'])) {
@@ -172,7 +211,7 @@ class SubscribeForm extends FormBase {
       // The alternatives from Apsis can be anything.
       if (is_int($value)) {
         $return_value = \Drupal::state()->get('apsis_mail.demographic_data')[$key]['return_value'];
-        $alternatives = $apsis->getDemographicData()[$key]['alternatives'];
+        $alternatives = $this->apsis->getDemographicData()[$key]['alternatives'];
 
         if (!$value) {
           unset($alternatives[$return_value]);
@@ -188,14 +227,34 @@ class SubscribeForm extends FormBase {
       ];
     }
 
-    // Add subscriber(s).
-    $results = [];
-    foreach ($subscribe_lists as $list) {
-      $submit = $apsis->addSubscriber($list, $email, $name, $demographics);
-      $results[$list] = $submit->Message;
-      drupal_set_message(t($submit->Message));
+    $new_subscription_lists = $subscribe_lists;
+
+    // Determine which lists the user has already subscribed to.
+    $subscriber_id = $this->apsis->getSubscriberIdByEmail($email);
+    if (!empty($subscriber_id)) {
+      $subscriber_lists = $this->apsis->getSubscriberMailingLists($subscriber_id);
+      $subscriber_list_ids = array_map(function($list) {
+        return $list->Id;
+      }, $subscriber_lists);
+      $new_subscription_lists = array_diff($subscribe_lists, $subscriber_list_ids);
     }
-    $form_state->setValue('results', $results);
+
+    // Add new subscriptions.
+    foreach ($new_subscription_lists as $list) {
+      /* @var \Drupal\Core\Queue\QueueInterface $queue */
+      $queue = \Drupal::service('apsis.queue.add_subscriber');
+      $queue->createItem([$list, $email, $name, $demographics]);
+    }
+
+    // Add feedback for all the lists the user wanted to subscribe to.
+    foreach ($subscribe_lists as $list) {
+      if (in_array($list, $new_subscription_lists)) {
+        $message = t('Subscriber successfully created and/or added to list');
+      } else {
+        $message = t('Subscriber with e-mail @email already exists on the list', ['@email' => $email]);
+      }
+      drupal_set_message($message);
+    }
   }
 
 }

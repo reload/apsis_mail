@@ -1,3 +1,33 @@
 services:
   apsis:
     class: Drupal\apsis_mail\Apsis
+    arguments:
+      - '@apsis.client'
+      - '@apsis.config'
+  apsis.client:
+    class: \GuzzleHttp\Client
+    factory: ['@http_client_factory', 'fromOptions']
+    arguments: []
+  # Use this client when preparing for queuing subscriptions.
+  apsis.prequeue:
+    class: Drupal\apsis_mail\Apsis
+    arguments:
+      - '@apsis.client.prequeue'
+      - '@apsis.config'
+  apsis.client.prequeue:
+    class: \GuzzleHttp\Client
+    factory: ['@http_client_factory', 'fromOptions']
+    arguments:
+      # This will make requests time out quickly so we can defer to our queue before the client times out.
+      # Based on New Relic data most requests should complete within a 2 second timeframe.
+      - timeout: 2
+  apsis.config:
+    class: Drupal\Core\Config\ImmutableConfig
+    factory: ['@config.factory', 'get']
+    arguments:
+      - 'apsis_mail.admin'
+  apsis.queue.add_subscriber:
+    class: Drupal\Core\Queue\QueueInterface
+    factory: ['@queue', 'get']
+    arguments:
+      - 'apsis_mail_add_subscriber'
