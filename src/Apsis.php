@@ -210,15 +210,21 @@ class Apsis {
 
   /**
    * Get mailing lists by subscriber.
+   *
+   * @param int $subscriber_id
+   *   The id of the subscriber for which to retrieve mailing lists which the user subscribes to.
+   *
+   * @return object[]
+   *   Array of objects of mailing list data from the subscribers subscriptions.
    */
-  public function getSubscriberMailingLists($id) {
+  public function getSubscriberMailingLists($subscriber_id) {
     // Request options.
     $method = 'get';
-    $path = '/v1/subscribers/' . $id . '/mailinglists';
+    $path = '/v1/subscribers/' . $subscriber_id . '/mailinglists';
 
     $contents = $this->request($method, $path);
 
-    return $contents ? $contents->Result : NULL;
+    return (!empty($contents->Result->Mailinglists)) ? $contents->Result->Mailinglists : [];
   }
 
   /**
