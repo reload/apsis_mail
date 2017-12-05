@@ -1,3 +1,8 @@
 services:
   apsis:
     class: Drupal\apsis_mail\Apsis
+  apsis.queue.add_subscriber:
+    class: Drupal\Core\Queue\QueueInterface
+    factory: ['@queue', 'get']
+    arguments:
+      - 'apsis_mail_add_subscriber'
