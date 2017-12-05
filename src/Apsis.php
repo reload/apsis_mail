@@ -2,6 +2,8 @@
 
 namespace Drupal\apsis_mail;
 
+use Drupal\Core\Config\ImmutableConfig;
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 
 /**
@@ -10,19 +12,30 @@ use GuzzleHttp\Exception\RequestException;
 class Apsis {
 
   /**
+   * HTTP client used to interact with the Apsis API.
+   *
+   * @var \GuzzleHttp\ClientInterface
+   */
+  protected $client;
+
+  /**
    * Configuration object.
    *
-   * @var class
+   * @var \Drupal\Core\Config\ImmutableConfig
    */
   public $config;
 
   /**
-   * Constructor.
+   * Apsis constructor.
    *
-   * @property class config
+   * @param \GuzzleHttp\ClientInterface $client
+   *   HTTP client used to interact with the Apsis API.
+   * @param ImmutableConfig $config
+   *   Configuration object.
    */
-  public function __construct() {
-    $this->config = \Drupal::config('apsis_mail.admin');
+  public function __construct(ClientInterface $client, ImmutableConfig $config) {
+    $this->client = $client;
+    $this->config = $config;
   }
 
   /**
@@ -49,12 +62,10 @@ class Apsis {
     $request_url = $protocol . $url . $port . $path;
 
     if ($key && $url) {
-      // Invoke client.
-      $client = \Drupal::httpClient();
       // Try request.
       try {
         // Do http request.
-        $response = $client->{$method}($request_url, $args);
+        $response = $this->client->{$method}($request_url, $args);
 
         // Return response body.
         $body = $response->getBody();

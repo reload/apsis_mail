@@ -1,6 +1,18 @@
 services:
   apsis:
     class: Drupal\apsis_mail\Apsis
+    arguments:
+      - '@apsis.client'
+      - '@apsis.config'
+  apsis.client:
+    class: \GuzzleHttp\Client
+    factory: ['@http_client_factory', 'fromOptions']
+    arguments: []
+  apsis.config:
+    class: Drupal\Core\Config\ImmutableConfig
+    factory: ['@config.factory', 'get']
+    arguments:
+      - 'apsis_mail.admin'
   apsis.queue.add_subscriber:
     class: Drupal\Core\Queue\QueueInterface
     factory: ['@queue', 'get']
