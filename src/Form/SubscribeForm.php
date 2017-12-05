@@ -47,7 +47,7 @@ class SubscribeForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('apsis'),
+      $container->get('apsis.prequeue'),
       $container->get('apsis.queue.add_subscriber')
     );
   }
