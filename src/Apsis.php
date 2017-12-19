@@ -2,6 +2,8 @@
 
 namespace Drupal\apsis_mail;
 
+use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\ImmutableConfig;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
@@ -10,6 +12,13 @@ use GuzzleHttp\Exception\RequestException;
  * Apsis mail api.
  */
 class Apsis {
+
+  /**
+   * The cache backend used by Apsis.
+   *
+   * @var \Drupal\Core\Cache\CacheBackendInterface
+   */
+  protected $cache;
 
   /**
    * HTTP client used to interact with the Apsis API.
@@ -26,16 +35,29 @@ class Apsis {
   public $config;
 
   /**
+   * The current time as a unix timestamp.
+   *
+   * @var int
+   */
+  protected $requestTime;
+
+  /**
    * Apsis constructor.
    *
    * @param \GuzzleHttp\ClientInterface $client
    *   HTTP client used to interact with the Apsis API.
    * @param ImmutableConfig $config
    *   Configuration object.
+   * @param \Drupal\Core\Cache\CacheBackendInterface $cache
+   *   The cache backend used by Apsis.
+   * @param \Drupal\Component\Datetime\TimeInterface $time
+   *   The time service.
    */
-  public function __construct(ClientInterface $client, ImmutableConfig $config) {
+  public function __construct(ClientInterface $client, ImmutableConfig $config, CacheBackendInterface $cache, TimeInterface $time) {
     $this->client = $client;
     $this->config = $config;
+    $this->cache = $cache;
+    $this->requestTime = $time->getRequestTime();
   }
 
   /**
@@ -47,6 +69,9 @@ class Apsis {
    *   Request path.
    * @param array $args
    *   Request header arguments.
+   *
+   * @return false|object
+   *   False on failure, otherwise object with response data.
    */
   protected function request($method, $path, array $args = []) {
     // Set options variables.
@@ -74,7 +99,7 @@ class Apsis {
       catch (RequestException $e) {
         // Ignore bad request errors since 'user not found' is treated like one.
         if (in_array($e->getCode(), [400])) {
-          return;
+          return FALSE;
         }
         // Set db log message.
         \Drupal::logger('apsis_mail')->error($e->getMessage());
@@ -107,7 +132,7 @@ class Apsis {
     $response = drupal_static($cid, NULL);
     if ($response === NULL) {
       // Then check the cache backend.
-      $cache = \Drupal::cache()->get($cid);
+      $cache = $this->cache->get($cid);
       if ($cache !== FALSE) {
         $response = $cache->data;
       }
@@ -119,10 +144,18 @@ class Apsis {
 
       // Make sure that static cache is set.
       $static_cache = &drupal_static($cid, NULL);
-      $static_cache = $response;
-
-      // Cache results for 30 seconds.
-      \Drupal::cache()->set($cid, $response, REQUEST_TIME + 30);
+      // Handle bad requests, we allow using stale cache if possible.
+      if ($response === FALSE) {
+        $cache = $this->cache->get($cid, TRUE);
+        if ($cache !== FALSE) {
+          $response = $cache->data;
+        }
+      }
+      else {
+        $static_cache = $response;
+        // Cache results for 30 seconds.
+        $this->cache->set($cid, $response, $this->requestTime + 30);
+      }
     }
 
     return $response;
@@ -364,7 +397,7 @@ class Apsis {
     // Get all lists.
     $all_demographics = $this->getDemographicData();
     // Get config.
-    $allowed_demographics = \Drupal::state()->get('apsis_mail.demographic_data');
+    $allowed_demographics = \Drupal::state()->get('apsis_mail.demographic_data', []);
 
     // Get allowed list settings.
     $allowed_demographic_data = [];

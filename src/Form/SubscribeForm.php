@@ -128,7 +128,7 @@ class SubscribeForm extends FormBase {
       foreach ($allowedDemographicData as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
         $required = $demographic['required'];
-        $state = \Drupal::state()->get('apsis_mail.demographic_data');
+        $state = \Drupal::state()->get('apsis_mail.demographic_data', []);
         $label = !empty($state[$key]['label']) ? $state[$key]['label'] : $key;
         $checkbox = $state[$key]['checkbox'];
         $return_value = !empty($state[$key]['return_value']) ? $state[$key]['return_value'] : NULL;
