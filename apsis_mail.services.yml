@@ -4,6 +4,8 @@ services:
     arguments:
       - '@apsis.client'
       - '@apsis.config'
+      - '@cache.default'
+      - '@datetime.time'
   apsis.client:
     class: \GuzzleHttp\Client
     factory: ['@http_client_factory', 'fromOptions']
@@ -11,9 +13,9 @@ services:
   # Use this client when preparing for queuing subscriptions.
   apsis.prequeue:
     class: Drupal\apsis_mail\Apsis
+    parent: apsis
     arguments:
-      - '@apsis.client.prequeue'
-      - '@apsis.config'
+      0: '@apsis.client.prequeue'
   apsis.client.prequeue:
     class: \GuzzleHttp\Client
     factory: ['@http_client_factory', 'fromOptions']
