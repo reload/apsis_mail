@@ -364,7 +364,7 @@ class Apsis {
     // Get all lists.
     $all_demographics = $this->getDemographicData();
     // Get config.
-    $allowed_demographics = \Drupal::state()->get('apsis_mail.demographic_data');
+    $allowed_demographics = \Drupal::state()->get('apsis_mail.demographic_data', []);
 
     // Get allowed list settings.
     $allowed_demographic_data = [];
