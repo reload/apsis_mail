@@ -2,6 +2,8 @@
 
 namespace Drupal\apsis_mail;
 
+use Drupal\apsis_mail\Exception\ApsisException;
+use Drupal\apsis_mail\Exception\ExceptionMapper;
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\ImmutableConfig;
@@ -42,6 +44,13 @@ class Apsis {
   protected $requestTime;
 
   /**
+   * The exception factory used to map HTTP exceptions to Apsis exceptions.
+   *
+   * @var ExceptionMapper
+   */
+  protected $exceptionMapper;
+
+  /**
    * Apsis constructor.
    *
    * @param \GuzzleHttp\ClientInterface $client
@@ -52,12 +61,21 @@ class Apsis {
    *   The cache backend used by Apsis.
    * @param \Drupal\Component\Datetime\TimeInterface $time
    *   The time service.
+   * @param \Drupal\apsis_mail\Exception\ExceptionMapper
+   *   The exception factory.
    */
-  public function __construct(ClientInterface $client, ImmutableConfig $config, CacheBackendInterface $cache, TimeInterface $time) {
+  public function __construct(
+    ClientInterface $client,
+    ImmutableConfig $config,
+    CacheBackendInterface $cache,
+    TimeInterface $time,
+    ExceptionMapper $exceptionMapper
+  ) {
     $this->client = $client;
     $this->config = $config;
     $this->cache = $cache;
     $this->requestTime = $time->getRequestTime();
+    $this->exceptionMapper = $exceptionMapper;
   }
 
   /**
@@ -70,8 +88,10 @@ class Apsis {
    * @param array $args
    *   Request header arguments.
    *
-   * @return false|object
-   *   False on failure, otherwise object with response data.
+   * @return object
+   *   Object with response data.
+   *
+   * @throws ApsisException
    */
   protected function request($method, $path, array $args = []) {
     // Set options variables.
@@ -90,6 +110,7 @@ class Apsis {
       // Try request.
       try {
         // Do http request.
+        /* @var \Psr\Http\Message\ResponseInterface $response */
         $response = $this->client->{$method}($request_url, $args);
 
         // Return response body.
@@ -97,13 +118,10 @@ class Apsis {
         return json_decode($body->getContents());
       }
       catch (RequestException $e) {
-        // Ignore bad request errors since 'user not found' is treated like one.
-        if (in_array($e->getCode(), [400])) {
-          return FALSE;
-        }
         // Set db log message.
         \Drupal::logger('apsis_mail')->error($e->getMessage());
-        return FALSE;
+        $exception = $this->exceptionMapper->map($e);
+        throw $exception;
       }
     }
   }
@@ -124,6 +142,8 @@ class Apsis {
    *
    * @return mixed
    *   The response from Apsis.
+   *
+   * @throws ApsisException
    */
   protected function cachableRequest($method, $path, array $args = []) {
     $cid = 'apsis_mail:api:' . hash('sha256', var_export(func_get_args(), TRUE));
@@ -166,6 +186,8 @@ class Apsis {
    *
    * @return array
    *   Array containing allowed mailing lists.
+   *
+   * @throws ApsisException
    */
   public function getAllowedMailingLists() {
     // Get all lists.
@@ -184,6 +206,8 @@ class Apsis {
    *
    * @return array
    *   Array containing all mailing lists.
+   *
+   * @throws ApsisException
    */
   public function getMailingLists() {
     // Request options.
@@ -210,6 +234,8 @@ class Apsis {
 
   /**
    * Get mailing list name from list id.
+   *
+   * @throws ApsisException
    */
   public function getMailingListInfo($list_id) {
     // Request options.
@@ -235,6 +261,8 @@ class Apsis {
    *
    * @param string $id
    *   Apsis mailing list id.
+   *
+   * @throws ApsisException
    */
   public function getSubscribers($id) {
     // Request options.
@@ -260,6 +288,8 @@ class Apsis {
    *
    * @return object[]
    *   Array of objects of mailing list data from the subscribers subscriptions.
+   *
+   * @throws ApsisException
    */
   public function getSubscriberMailingLists($subscriber_id) {
     // Request options.
@@ -276,6 +306,8 @@ class Apsis {
    *
    * @param string $email
    *   An email address.
+   *
+   * @throws ApsisException
    */
   public function getSubscriberIdByEmail($email) {
     // Request options.
@@ -288,7 +320,7 @@ class Apsis {
     // Do request.
     $contents = $this->cachableRequest($method, $path, $args);
 
-    return $contents ? $contents->Result : NULL;
+    return $contents->Result;
   }
 
   /**
@@ -298,6 +330,8 @@ class Apsis {
    *   Apsis mailing list id.
    * @param string $email
    *   Email address.
+   *
+   * @throws ApsisException
    */
   public function deleteSubscriber($list_id, $email) {
     // Get subscriber id.
@@ -337,6 +371,8 @@ class Apsis {
    *   Username.
    * @param array $demographic_data
    *   Demographic data.
+   *
+   * @throws ApsisException
    */
   public function addSubscriber($list_id, $email, $name, array $demographic_data = []) {
     // Request options.
@@ -372,6 +408,8 @@ class Apsis {
    *
    * @param string $email
    *   An email address.
+   *
+   * @throws ApsisException
    */
   public function getSubscriberInfoByEmail($email) {
     // Get subscriber id.
@@ -392,6 +430,8 @@ class Apsis {
    *
    * @return array
    *   Allowed demographic data.
+   *
+   * @throws ApsisException
    */
   public function getAllowedDemographicData() {
     // Get all lists.
@@ -423,6 +463,8 @@ class Apsis {
    *
    * @return array
    *   The demographics from the APSIS account.
+   *
+   * @throws ApsisException
    */
   public function getDemographicData() {
     // Request options.

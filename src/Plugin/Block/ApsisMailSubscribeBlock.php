@@ -2,6 +2,7 @@
 
 namespace Drupal\apsis_mail\Plugin\Block;
 
+use Drupal\apsis_mail\Exception\ApsisException;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -57,10 +58,13 @@ class ApsisMailSubscribeBlock extends BlockBase implements ContainerFactoryPlugi
     ];
 
     // Get allowed mailing lists.
-    $mailing_lists = $apsis->getAllowedMailingLists();
-
-    // Get allowed demographic data.
-    $demographic_data = $apsis->getAllowedDemographicData();
+    try {
+      $mailing_lists = $apsis->getAllowedMailingLists();
+      $demographic_data = $apsis->getAllowedDemographicData();
+    } catch (ApsisException $e) {
+      $mailing_lists = [];
+      $demographic_data = [];
+    }
 
     // Display a link to the admin configuration,
     // if there is no allowed mailing lists.

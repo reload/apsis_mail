@@ -6,10 +6,25 @@ services:
       - '@apsis.config'
       - '@cache.default'
       - '@datetime.time'
+      - '@apsis.exception_mapper'
   apsis.client:
     class: \GuzzleHttp\Client
     factory: ['@http_client_factory', 'fromOptions']
     arguments: []
+  apsis.exception_mapper:
+    class: Drupal\apsis_mail\Exception\ExceptionMapper
+    factory: ['Drupal\apsis_mail\Exception\ExceptionMapper', 'factory']
+    arguments:
+      -
+        - 'Drupal\apsis_mail\Exception\ApiDisabledException'
+        - 'Drupal\apsis_mail\Exception\BadRequestException'
+        - 'Drupal\apsis_mail\Exception\BusyException'
+        - 'Drupal\apsis_mail\Exception\InternalServerErrorException'
+        - 'Drupal\apsis_mail\Exception\InvalidSubscriberException'
+        - 'Drupal\apsis_mail\Exception\NotFoundException'
+        - 'Drupal\apsis_mail\Exception\OptOutSubscriberException'
+        - 'Drupal\apsis_mail\Exception\UnauthorizedException'
+        - 'Drupal\apsis_mail\Exception\ValidationErrorException'
   # Use this client when preparing for queuing subscriptions.
   apsis.prequeue:
     class: Drupal\apsis_mail\Apsis

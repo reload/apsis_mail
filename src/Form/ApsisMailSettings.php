@@ -2,6 +2,7 @@
 
 namespace Drupal\apsis_mail\Form;
 
+use Drupal\apsis_mail\Exception\ApsisException;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\ConfigFormBase;
 
@@ -109,7 +110,8 @@ class ApsisMailSettings extends ConfigFormBase {
       '#default_value' => $config->get('user_roles') ? $config->get('user_roles') : [],
     ];
 
-    if ($apsis->getMailingLists()) {
+    try {
+      $apsis_mailing_lists = $apsis->getMailingLists();
       $form['mailing_lists'] = [
         '#type' => 'details',
         '#title' => $this->t('Mailing lists'),
@@ -119,12 +121,15 @@ class ApsisMailSettings extends ConfigFormBase {
       $form['mailing_lists']['mailing_lists'] = [
         '#type' => 'checkboxes',
         '#title' => $this->t('Allowed mailing lists'),
-        '#options' => $apsis->getMailingLists(),
+        '#options' => $apsis_mailing_lists,
         '#default_value' => $mailing_lists ? $mailing_lists : [],
       ];
+    } catch (ApsisException $e) {
+      // Do nothing.
     }
 
-    if ($apsis->getDemographicData()) {
+    try {
+      $apsis_demographic_data = $apsis->getDemographicData();
       $form['demographic_data'] = [
         '#type' => 'details',
         '#title' => $this->t('Demographic data'),
@@ -150,7 +155,7 @@ class ApsisMailSettings extends ConfigFormBase {
         ],
       ];
 
-      foreach ($apsis->getDemographicData() as $key => $demographic) {
+      foreach ($apsis_demographic_data as $key => $demographic) {
         $alternatives = $demographic['alternatives'];
 
         $form['demographic_data']['demographic_data'][$key]['key'] = [
@@ -185,6 +190,8 @@ class ApsisMailSettings extends ConfigFormBase {
           '#default_value' => !empty($demographic_data[$key]['return_value']) ? $demographic_data[$key]['return_value'] : '',
         ];
       }
+    } catch (ApsisException $e) {
+      // Do nothing.
     }
 
     return parent::buildForm($form, $form_state);

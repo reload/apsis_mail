@@ -2,9 +2,18 @@
 
 namespace Drupal\apsis_mail\Plugin\QueueWorker;
 use Drupal\apsis_mail\Apsis;
+use Drupal\apsis_mail\Exception\ApiDisabledException;
+use Drupal\apsis_mail\Exception\ApsisException;
+use Drupal\apsis_mail\Exception\BusyException;
+use Drupal\apsis_mail\Exception\OptOutSubscriberException;
+use Drupal\apsis_mail\Exception\UnauthorizedException;
+use Drupal\apsis_mail\Exception\ValidationErrorException;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Queue\QueueWorkerBase;
 use Drupal\Core\Queue\RequeueException;
+use Drupal\Core\Queue\SuspendQueueException;
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -17,6 +26,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * )
  */
 class AddSubscriber extends QueueWorkerBase implements ContainerFactoryPluginInterface {
+  use LoggerAwareTrait;
 
   /**
    * @var \Drupal\apsis_mail\Apsis
@@ -27,10 +37,12 @@ class AddSubscriber extends QueueWorkerBase implements ContainerFactoryPluginInt
     array $configuration,
     $plugin_id,
     $plugin_definition,
+    LoggerInterface $logger,
     Apsis $apsis
   )
   {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->logger = $logger;
     $this->apsis = $apsis;
   }
 
@@ -39,10 +51,13 @@ class AddSubscriber extends QueueWorkerBase implements ContainerFactoryPluginInt
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition)
   {
+    $loggerFactory = $container->get('logger.factory');
+
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
+      $loggerFactory->get('apsis_mail'),
       $container->get('apsis')
     );
   }
@@ -53,19 +68,20 @@ class AddSubscriber extends QueueWorkerBase implements ContainerFactoryPluginInt
   public function processItem($data)
   {
     list($email, $list_id, $name, $demographic_data) = $data;
-    $result = $this->apsis->addSubscriber($email, $list_id, $name, $demographic_data);
-    // If the request fails then requeue for later processing. This could for example be due to a request timeout. We
-    // currently have no way to distinguish between different types of error so we always retry.
-    if ($result === FALSE) {
-      throw new RequeueException(
-        sprintf(
-          'Unable to add subscriber (%s, %s) to list %s with data %s',
-          $email,
-          $name,
-          $list_id,
-          var_export($demographic_data, true)
-        )
-      );
+    try {
+      $this->apsis->addSubscriber($email, $list_id, $name, $demographic_data);
+    } catch (OptOutSubscriberException $e) {
+      // User on opt-out list. Log for good measure and move on.
+      $this->logger->notice($e->getMessage());
+    } catch (ValidationErrorException $e) {
+      // Invalid data. Nothing really we can do here. Log and more on.
+      $this->logger->error(sprintf('Unable to subscribe email %s to list %s: %s', $email, $list_id, $e->getMessage()));
+    } catch (ApiDisabledException $e) {
+      throw new SuspendQueueException($e);
+    } catch (BusyException $e) {
+      throw new SuspendQueueException($e);
+    } catch (UnauthorizedException $e) {
+      throw new SuspendQueueException($e);
     }
   }
 }
