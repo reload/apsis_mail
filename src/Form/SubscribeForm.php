@@ -3,9 +3,12 @@
 namespace Drupal\apsis_mail\Form;
 
 use Drupal\apsis_mail\Apsis;
+use Drupal\apsis_mail\Exception\ApsisException;
+use Drupal\apsis_mail\Exception\InvalidSubscriberException;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Queue\QueueInterface;
+use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -113,8 +116,13 @@ class SubscribeForm extends FormBase {
     // block form or if there is no specific args, then we default to use the
     // exposed option.
     $build_info = $form_state->getBuildInfo();
-    $allowedMailingLists = $apsis->getAllowedMailingLists();
-    $allowedDemographicData = $apsis->getAllowedDemographicData();
+    try {
+      $allowedMailingLists = $apsis->getAllowedMailingLists();
+      $allowedDemographicData = $apsis->getAllowedDemographicData();
+    } catch (ApsisException $e) {
+      $allowedMailingLists = [];
+      $allowedDemographicData = [];
+    }
 
     if (count($allowedDemographicData > 0)) {
       $form['apsis_demographic_data'] = [
@@ -211,14 +219,19 @@ class SubscribeForm extends FormBase {
       // The alternatives from Apsis can be anything.
       if (is_int($value)) {
         $return_value = \Drupal::state()->get('apsis_mail.demographic_data')[$key]['return_value'];
-        $alternatives = $this->apsis->getDemographicData()[$key]['alternatives'];
 
-        if (!$value) {
-          unset($alternatives[$return_value]);
-          $value = reset($alternatives);
-        }
-        else {
-          $value = $alternatives[$return_value];
+        try {
+          $alternatives = $this->apsis->getDemographicData()[$key]['alternatives'];
+
+          if (!$value) {
+            unset($alternatives[$return_value]);
+            $value = reset($alternatives);
+          }
+          else {
+            $value = $alternatives[$return_value];
+          }
+        } catch (ApsisException $e) {
+          // Do nothing.
         }
       }
       $demographics[] = [
@@ -230,13 +243,21 @@ class SubscribeForm extends FormBase {
     $new_subscription_lists = $subscribe_lists;
 
     // Determine which lists the user has already subscribed to.
-    $subscriber_id = $this->apsis->getSubscriberIdByEmail($email);
-    if (!empty($subscriber_id)) {
+    try {
+      $subscriber_id = $this->apsis->getSubscriberIdByEmail($email);
       $subscriber_lists = $this->apsis->getSubscriberMailingLists($subscriber_id);
       $subscriber_list_ids = array_map(function($list) {
         return $list->Id;
       }, $subscriber_lists);
       $new_subscription_lists = array_diff($subscribe_lists, $subscriber_list_ids);
+    } catch (InvalidSubscriberException $e) {
+      // The email does not belong to any current subscribers. Add the email to all originally intended mailing lists
+      // and a subscriber will automatically be created.
+    } catch (ApsisException $e) {
+      // Log error but still try to queue up subscription. Further error handling should be handled by the queue worker.
+      \Drupal::logger('apsis_mail')->warning(
+        sprintf('Unable to determine subscription status for %s: %s', $email, $e->getMessage())
+      );
     }
 
     // Add new subscriptions.

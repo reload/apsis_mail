@@ -5,6 +5,7 @@
  * Apsis mail module file.
  */
 
+use Drupal\apsis_mail\Exception\ApsisException;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -30,7 +31,11 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
   // Get apsis data.
   $apsis = \Drupal::service('apsis');
   $config = $apsis->config;
-  $mailing_lists = $apsis->getAllowedMailingLists();
+  try {
+    $mailing_lists = $apsis->getAllowedMailingLists();
+  } catch (ApsisException $e) {
+    $mailing_lists = [];
+  }
 
   // Get user info.
   $user = $form_state->getFormObject()->getEntity();
@@ -43,15 +48,17 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
 
   // Proceed if roles are matching and there is allowed mailing lists.
   if (!empty(array_intersect($roles, $allowed_roles)) && !empty($mailing_lists)) {
-    $subscriber_id = $apsis->getSubscriberIdByEmail($email);
+    try {
+      $subscriber_id = $apsis->getSubscriberIdByEmail($email);
 
-    // Get subscribed lists directly from apsis to use as default value.
-    $lists_subscribed = [];
-    if ($subscriber_id) {
+      // Get subscribed lists directly from apsis to use as default value.
+      $lists_subscribed = [];
       $lists = $apsis->getSubscriberMailingLists($subscriber_id);
       foreach ($lists->Mailinglists as $list) {
         $lists_subscribed[] = $list->Id;
       }
+    } catch (ApsisException $e) {
+      $lists_subscribed = [];
     }
 
     $form['apsis'] = [
@@ -61,7 +68,11 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
     ];
 
     // Render demographic data.
-    $allowedDemographicData = $apsis->getAllowedDemographicData();
+    try {
+      $allowedDemographicData = $apsis->getAllowedDemographicData();
+    } catch (ApsisException $e) {
+      $allowedDemographicData = [];
+    }
 
     $form['apsis']['apsis_demographic_data'] = [
       '#type' => 'fieldset',
@@ -70,12 +81,13 @@ function apsis_mail_form_user_form_alter(&$form, FormStateInterface $form_state)
     ];
 
     // Get Demograpic data states.
-    $user_info = $apsis->getSubscriberInfoByEmail($email);
-    $demographic_states = [];
-    if ($user_info) {
+    try {
+      $user_info = $apsis->getSubscriberInfoByEmail($email);
       foreach ($user_info->DemDataFields as $demdata) {
         $demographic_states[$demdata->Key] = $demdata->Value;
       }
+    } catch (ApsisException $e) {
+      $demographic_states = [];
     }
 
     foreach ($allowedDemographicData as $key => $demographic) {
@@ -120,17 +132,6 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
   $email = $user->getEmail();
   $name = $user->getUsername();
 
-  $subscriber_id = $apsis->getSubscriberIdByEmail($email);
-
-  // Get subscribed lists directly from apsis to use as default value.
-  $lists_subscribed = [];
-  if ($subscriber_id) {
-    $lists = $apsis->getSubscriberMailingLists($subscriber_id);
-    foreach ($lists->Mailinglists as $list) {
-      $lists_subscribed[] = $list->Id;
-    }
-  }
-
   // Format demographic data.
   $demographics = [];
   foreach ($form_state->getValue('apsis_demographic_data') as $key => $value) {
@@ -157,6 +158,10 @@ function _apsis_mail_submit($form, FormStateInterface $form_state) {
   // Subscribe or unsubscribe to newsletters.
   $values = $form_state->getValues();
   foreach ($values['apsis_newsletter_signup'] as $list_id => $value) {
-    ($list_id == $value) ? $apsis->addSubscriber($list_id, $email, $name, $demographics) : $apsis->deleteSubscriber($list_id, $email);
+    try {
+      ($list_id == $value) ? $apsis->addSubscriber($list_id, $email, $name, $demographics) : $apsis->deleteSubscriber($list_id, $email);
+    } catch (ApsisException $e) {
+      watchdog_exception('apsis_mail', $e);
+    }
   }
 }
