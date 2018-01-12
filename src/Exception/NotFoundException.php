@@ -2,9 +2,6 @@
 
 namespace Drupal\apsis_mail\Exception;
 
-
-use Throwable;
-
 /**
  * Not found exception.
  *
@@ -16,9 +13,17 @@ class NotFoundException extends ApsisException
   /**
    * {@inheritdoc}
    */
-  public function __construct($message, $state = -3, $code = 404, Throwable $previous = null)
+  public static function getState()
   {
-    parent::__construct($message, $state, $code, $previous);
+    return -3;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getHttpStatus()
+  {
+    return 404;
   }
 
 }

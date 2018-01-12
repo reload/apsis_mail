@@ -2,9 +2,6 @@
 
 namespace Drupal\apsis_mail\Exception;
 
-
-use Throwable;
-
 /**
  * Internal Server Error.
  *
@@ -17,9 +14,17 @@ class InternalServerErrorException extends ApsisException
   /**
    * {@inheritdoc}
    */
-  public function __construct($message, $state = -1, $code = 500, Throwable $previous = null)
+  public static function getState()
   {
-    parent::__construct($message, $state, $code, $previous);
+    return -1;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getHttpStatus()
+  {
+    return 500;
   }
 
 }

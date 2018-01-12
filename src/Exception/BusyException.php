@@ -2,9 +2,6 @@
 
 namespace Drupal\apsis_mail\Exception;
 
-
-use Throwable;
-
 /**
  * Busy exception
  *
@@ -16,9 +13,17 @@ class BusyException extends ApsisException
   /**
    * {@inheritdoc}
    */
-  public function __construct($message, $state = -5, $code = 503, Throwable $previous = null)
+  public static function getState()
   {
-    parent::__construct($message, $state, $code, $previous);
+    return -5;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getHttpStatus()
+  {
+    return 503;
   }
 
 }

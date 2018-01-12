@@ -14,39 +14,24 @@ use Throwable;
 class ApsisException extends \Exception {
 
   /**
-   * APSIS custom error code.
-   *
-   * @var int
-   */
-  protected $state;
-
-  /**
-   * ApsisException constructor.
-   *
-   * @param string $message
-   *   Exception message.
-   * @param int $state
-   *   Apsis custom error code.
-   * @param int $code
-   *   HTTP error code.
-   * @param Throwable|null $previous
-   *   Exception which this message was mapped from.
-   */
-  public function __construct($message, $state, $code = 0, Throwable $previous = null)
-  {
-    parent::__construct($message, $code, $previous);
-    $this->state = $state;
-  }
-
-  /**
-   * Returns the custom APSIS error code.
+   * Returns the custom APSIS error code corresponding to this exception type.
    *
    * @return int
    *   Custom APSIS error code
    */
-  public function getState()
-  {
-    return $this->state;
+  public static function getState() {
+    return NULL;
+  }
+
+
+  /**
+   * Returns the HTTP status code corresponding to this exception type.
+   *
+   * @return int
+   *   Custom APSIS error code
+   */
+  public static function getHttpStatus() {
+   return NULL;
   }
 
   /**
@@ -57,8 +42,7 @@ class ApsisException extends \Exception {
    * @return string|NULL
    *   Regular expression. NULL if the Apsis exception cannot be mapped using a match phrase.
    */
-  public function getMatchPhrase()
-  {
+  public static function getMatchPhrase() {
     return NULL;
   }
 

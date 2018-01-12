@@ -2,9 +2,6 @@
 
 namespace Drupal\apsis_mail\Exception;
 
-
-use Throwable;
-
 /**
  * API Disabled exception.
  *
@@ -17,9 +14,17 @@ class ApiDisabledException extends ApsisException
   /**
    * {@inheritdoc}
    */
-  public function __construct($message, $state = -6, $code = 503, Throwable $previous = null)
+  public static function getState()
   {
-    parent::__construct($message, $state, $code, $previous);
+    return -6;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getHttpStatus()
+  {
+    return 503;
   }
 
 }

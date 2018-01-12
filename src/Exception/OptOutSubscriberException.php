@@ -2,9 +2,6 @@
 
 namespace Drupal\apsis_mail\Exception;
 
-
-use Throwable;
-
 /**
  * Thrown if an email cannot be added to a subscription list because the user is
  * on an opt-out list.
@@ -34,15 +31,7 @@ class OptOutSubscriberException extends ValidationErrorException
   /**
    * {@inheritdoc}
    */
-  public function __construct($message, $state = NULL, $code = NULL, Throwable $previous = null)
-  {
-    parent::__construct($message, $state, $code, $previous);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getMatchPhrase()
+  public static function getMatchPhrase()
   {
     // Message in the format
     // "Subscriber with e-mail foo@bar.com exists on the Opt-out List."

@@ -89,10 +89,8 @@ class ExceptionMapper
     /* @var \ReflectionClass[] $matchingExceptionClasses */
     return array_filter($this->exceptionClasses, function(\ReflectionClass $class) use ($httpException) {
       list($code, $message) = self::getExceptionData($httpException);
-      /* @var \Drupal\apsis_mail\Exception\ApsisException $apsisException */
-      $apsisException = $class->newInstance('dummy message');
-      return $apsisException->getCode() == $httpException->getCode() &&
-        $apsisException->getState() == $code;
+      return $class->getMethod('getHttpStatus')->invoke(NULL) == $httpException->getCode() &&
+        $class->getMethod('getState')->invoke(NULL) == $code;
     });
   }
 
@@ -109,9 +107,8 @@ class ExceptionMapper
     /* @var \ReflectionClass[] $matchingExceptionClasses */
     return array_filter($this->exceptionClasses, function(\ReflectionClass $class) use ($httpException) {
       list($code, $message) = self::getExceptionData($httpException);
-      /* @var \Drupal\apsis_mail\Exception\ApsisException $apsisException */
-      $apsisException = $class->newInstance('dummy message');
-      return ($apsisException->getMatchPhrase()) ? preg_match($apsisException->getMatchPhrase(), $message) : FALSE;
+      $matchPhrase = $class->getMethod('getMatchPhrase')->invoke(NULL);
+      return ($matchPhrase) ? preg_match($matchPhrase, $message) : FALSE;
     });
   }
 
@@ -142,18 +139,15 @@ class ExceptionMapper
     ];
 
     // Execute all strategies. The first one will be the target of the mapping.
-    $matchingExceptionClasses = array_reduce(
-      $strategies,
-      function(array $exceptionClasses, callable $strategy) use ($httpException) {
-        return array_merge($exceptionClasses, $strategy($httpException));
-      },
-      []
-    );
+    $matchingExceptionClasses = [];
+    foreach ($strategies as $strategy) {
+      $matchingExceptionClasses = array_merge($matchingExceptionClasses, $strategy($httpException));
+    }
     $exceptionClass = array_shift($matchingExceptionClasses);
 
     // Finally create the mapped exception instance.
     list($code, $message) = self::getExceptionData($httpException);
-    return $exceptionClass->newInstance($message, $code, $httpException->getCode(), $httpException);
+    return $exceptionClass->newInstance($message, $httpException->getCode(), $httpException);
   }
 
   /**

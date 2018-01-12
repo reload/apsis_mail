@@ -2,9 +2,6 @@
 
 namespace Drupal\apsis_mail\Exception;
 
-
-use Throwable;
-
 /**
  * Validation error.
  *
@@ -16,9 +13,17 @@ class ValidationErrorException extends ApsisException
   /**
    * {@inheritdoc}
    */
-  public function __construct($message, $state = -2, $code = 400, Throwable $previous = null)
+  public static function getState()
   {
-    parent::__construct($message, $state, $code, $previous);
+    return -2;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getHttpStatus()
+  {
+    return 400;
   }
 
 }
