@@ -79,7 +79,7 @@ class ExceptionMapperTest extends UnitTestCase {
    * @return \GuzzleHttp\Exception\RequestException
    *   The resulting exception.
    */
-  public function generateException($httpStatus = 0, $apsisCode = 0, $apsisMessage = 'Some error occcured') {
+  public function generateException($httpStatus = 500, $apsisCode = 0, $apsisMessage = 'Some error occcured') {
     $httpException = new RequestException(
       'Exception message',
       new Request('GET', 'http://foo.bar'),
