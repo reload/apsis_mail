@@ -11,8 +11,6 @@ use Drupal\Tests\UnitTestCase;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
 
 /**
  * Test that the ExceptionMapper will map HTTP exceptions to APSIS exceptions.
@@ -27,7 +25,7 @@ class ExceptionMapperTest extends UnitTestCase {
 
     $exceptionMapper = new ExceptionMapper();
     $exceptionMapper->registerException(InternalServerErrorException::class);
-    $apsisException =$exceptionMapper->map($httpException);
+    $apsisException = $exceptionMapper->map($httpException);
     $this->assertEquals(ApsisException::class, get_class($apsisException));
   }
 
@@ -64,7 +62,7 @@ class ExceptionMapperTest extends UnitTestCase {
     // error code. We add both to ensure that the correct one is mapped here.
     $exceptionMapper->registerException(ValidationErrorException::class);
     $exceptionMapper->registerException(OptOutSubscriberException::class);
-    $apsisException =$exceptionMapper->map($httpException);
+    $apsisException = $exceptionMapper->map($httpException);
     $this->assertEquals(OptOutSubscriberException::class, get_class($apsisException));
   }
 
@@ -78,11 +76,10 @@ class ExceptionMapperTest extends UnitTestCase {
    * @param int $apsisMessage
    *   The APSIS error message to contain within the exception.
    *
-   * @return RequestException
+   * @return \GuzzleHttp\Exception\RequestException
    *   The resulting exception.
    */
-  public function generateException($httpStatus = 0, $apsisCode = 0, $apsisMessage = 'Some error occcured')
-  {
+  public function generateException($httpStatus = 500, $apsisCode = 0, $apsisMessage = 'Some error occcured') {
     $httpException = new RequestException(
       'Exception message',
       new Request('GET', 'http://foo.bar'),
@@ -91,7 +88,7 @@ class ExceptionMapperTest extends UnitTestCase {
         [],
         json_encode([
           'Code' => $apsisCode,
-          'Message' => $apsisMessage
+          'Message' => $apsisMessage,
         ])
       )
     );
